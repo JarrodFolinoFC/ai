@@ -1,56 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { bigramCounts, trainingPairs, randomMatrix, softmaxRow, trainToConvergence } from '../funcs';
 import { CORPUS_OPTIONS, type CorpusKey } from '../corpora';
 import { TrainingCorpus } from '../components/TrainingCorpus';
-
+import { ExplainMore } from '../components/ExplainMore';
 import { color, space, radius, font } from '../theme';
-
-const VOCAB = ['the', 'cat', 'dog', 'in', 'on', 'hat', 'sofa'] as const;
-
-
-
-// Collapsible "Explain it more" disclosure. Pass the extra detail as children.
-function ExplainMore({
-  label = 'Explain it more',
-  children,
-}: {
-  label?: string;
-  children: ReactNode;
-}) {
-  return (
-    <details
-      style={{
-        maxWidth: font.prose,
-        margin: '0.5rem 0',
-        padding: '0.5rem 0.75rem',
-        border: `1px solid ${color.border.default}`,
-        borderRadius: radius.sm,
-        background: color.bg.surface,
-      }}
-    >
-      <summary
-        style={{
-          cursor: 'pointer',
-          fontWeight: 'bold',
-          color: color.info.fg,
-          fontSize: font.size.md,
-        }}
-      >
-        {label}
-      </summary>
-      <p
-        style={{
-          color: color.text.secondary,
-          fontSize: font.size.sm,
-          lineHeight: 1.5,
-          marginBottom: 0,
-        }}
-      >
-        {children}
-      </p>
-    </details>
-  );
-}
+import {VOCAB} from "../consts"
 
 export function Stage1FlowPage() {
   const [corpusKey, setCorpusKey] = useState<CorpusKey>('25');
@@ -64,10 +18,15 @@ export function Stage1FlowPage() {
   const [W, setW] = useState(() => randomMatrix(1, VOCAB.length, VOCAB.length, 1));
   const [step, setStep] = useState(0);
   const [lossHistory, setLossHistory] = useState<number[]>([]);
-  // Which row of W was just updated, the logits before the update (to derive
-  // per-cell up/down direction), and a tick to retrigger the flash animation.
   const [flash, setFlash] = useState<
-    { row: number; tick: number; prevRow: number[]; phase: 'old' | 'new' } | null
+    {
+      row: number;
+      target: number;
+      pairIdx: number;
+      tick: number;
+      prevRow: number[];
+      phase: 'old' | 'new';
+    } | null
   >(null);
 
   const pairs = useMemo(() => trainingPairs(corpus, VOCAB), [corpus]);
@@ -79,10 +38,6 @@ export function Stage1FlowPage() {
   }, [seed, corpusKey]);
 
   const softmaxW = useMemo(() => W.map(softmaxRow), [W]);
-  const wMaxAbs = useMemo(
-    () => Math.max(...W.flat().map((v) => Math.abs(v)), 1e-9),
-    [W]
-  );
 
   const empirical = useMemo(
     () =>
@@ -140,6 +95,39 @@ export function Stage1FlowPage() {
 
   const pairIdx = step % pairs.length;
   const currentPair = pairs[pairIdx];
+  // Rows that have received at least one gradient update (appeared as `prev` in
+  // a processed pair). Untrained rows stay greyed at their random init — rows
+  // that never appear as `prev` never get a gradient and so never light up.
+  const trainedRows = useMemo(() => {
+    const seen = new Set<number>();
+    const n = Math.min(step, pairs.length);
+    for (let k = 0; k < n; k++) seen.add(pairs[k].prev);
+    return seen;
+  }, [step, pairs]);
+  // Black box around the single cell being updated (trained row × target column).
+  const cellBox = (i: number, j: number) =>
+    flash?.row === i && flash?.target === j
+      ? { border: `2px solid ${color.text.primary}` }
+      : null;
+  // Header word tints matching the corpus tracker: the trained row's label is
+  // "a" (prev, warning) and the target column's label is "b" (next, emphasis).
+  // Only while a step is flashed.
+  const aHead = (i: number) =>
+    flash?.row === i
+      ? {
+          background: color.highlightBg,
+          color: color.text.emphasis,
+          fontWeight: 'bold' as const,
+        }
+      : null;
+  const bHead = (j: number) =>
+    flash?.target === j
+      ? {
+          background: color.info.border,
+          color: color.text.emphasis,
+          fontWeight: 'bold' as const,
+        }
+      : null;
   const corpusTokens = useMemo(() => corpus.split(/\s+/).filter(Boolean), [corpus]);
   const currentLogits = W[currentPair.prev];
   const currentExps = currentLogits.map((v) => Math.exp(v));
@@ -167,9 +155,11 @@ export function Stage1FlowPage() {
     // Only the single-step button animates: flash the row showing the OLD
     // numbers, hold ~2s, then fade to the new numbers. Batch steps would strobe.
     if (n === 1) {
-      const prev = pairs[step % pairs.length].prev;
+      const idx = step % pairs.length;
+      const pair = pairs[idx];
+      const prev = pair.prev;
       const tick = Date.now();
-      setFlash({ row: prev, tick, prevRow: W[prev].slice(), phase: 'old' });
+      setFlash({ row: prev, target: pair.target, pairIdx: idx, tick, prevRow: W[prev].slice(), phase: 'old' });
       setTimeout(() => {
         setFlash((f) => (f && f.tick === tick ? { ...f, phase: 'new' } : f));
       }, 2000);
@@ -187,19 +177,7 @@ export function Stage1FlowPage() {
 
   return (
     <div>
-      <style>{`@keyframes wflash {
-        0% { box-shadow: inset 0 0 0 2rem rgba(251, 191, 36, 0.85); }
-        100% { box-shadow: inset 0 0 0 2rem rgba(251, 191, 36, 0); }
-      }
-      @keyframes arrowpulse {
-        0%, 100% { opacity: 0.35; }
-        50% { opacity: 1; }
-      }
-      @keyframes numFade {
-        0% { opacity: 0; }
-        100% { opacity: 1; }
-      }`}</style>
-      <h2>Stage 1 — Bigram Forward + Backward</h2>
+      <h2>Bigram Forward + Backward</h2>
 
       <div
         style={{
@@ -215,237 +193,7 @@ export function Stage1FlowPage() {
           note="(changing this resets training)"
         />
       </div>
-
-      <div
-        style={{
-          display: 'flex',
-          gap: space.xxl,
-          flexWrap: 'wrap',
-          alignItems: 'flex-start',
-        }}
-      >
-        <div>
-          <h3 style={{ marginTop: 0 }}>Bigram counts (rows = prev, cols = next)</h3>
-      <table
-        style={{
-          borderCollapse: 'collapse',
-          fontFamily: 'monospace',
-          fontSize: font.size.md,
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={{ padding: '0.25rem 0.5rem' }}></th>
-            {VOCAB.map((w) => (
-              <th
-                key={w}
-                style={{
-                  padding: '0.25rem 0.5rem',
-                  borderBottom: `1px solid ${color.border.strong}`,
-                }}
-              >
-                {w}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {counts.map((row, i) => (
-            <tr key={VOCAB[i]}>
-              <th
-                style={{
-                  textAlign: 'right',
-                  padding: '0.25rem 0.5rem',
-                  borderRight: `1px solid ${color.border.strong}`,
-                }}
-              >
-                {VOCAB[i]}
-              </th>
-              {row.map((c, j) => (
-                <td
-                  key={j}
-                  style={{
-                    padding: '0.25rem 0.5rem',
-                    textAlign: 'right',
-                    background:
-                      VOCAB[i] === 'cat' && VOCAB[j] === 'on'
-                        ? color.highlightBg
-                        : c === 0
-                          ? color.bg.surface
-                          : 'transparent',
-                  }}
-                >
-                  {c}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p style={{ maxWidth: '34ch', color: color.text.secondary, fontSize: font.size.sm }}>
-        Highlighted cell: <code>cat → on</code> appears{' '}
-        {counts[1][4]} times out of{' '}
-        {counts[1].reduce((a, b) => a + b, 0)} total transitions from{' '}
-        <code>cat</code>. A well-trained bigram model should put roughly that
-        empirical fraction on <code>on</code> when the previous token is{' '}
-        <code>cat</code>.
-          </p>
-        </div>
-        <div>
-          <h4 style={{ marginBottom: '0.1rem' }}>Empirical</h4>
-          <code style={{ fontSize: font.size.sm, color: color.text.secondary }}>
-            pᵢ = countᵢ / Σ count
-          </code>
-          <table
-            style={{
-              borderCollapse: 'collapse',
-              fontFamily: 'monospace',
-              fontSize: font.size.md,
-            }}
-          >
-            <thead>
-              <tr>
-                <th style={{ padding: '0.25rem 0.5rem' }}></th>
-                {VOCAB.map((w) => (
-                  <th
-                    key={w}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      borderBottom: `1px solid ${color.border.strong}`,
-                    }}
-                  >
-                    {w}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {counts.map((row, i) => {
-                const rowSum = row.reduce((a, b) => a + b, 0);
-                return (
-                  <tr key={VOCAB[i]}>
-                    <th
-                      style={{
-                        textAlign: 'right',
-                        padding: '0.25rem 0.5rem',
-                        borderRight: `1px solid ${color.border.strong}`,
-                      }}
-                    >
-                      {VOCAB[i]}
-                    </th>
-                    {row.map((c, j) => {
-                      const p = rowSum === 0 ? 0 : c / rowSum;
-                      return (
-                        <td
-                          key={j}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            textAlign: 'right',
-                            background:
-                              VOCAB[i] === 'cat' && VOCAB[j] === 'on'
-                                ? color.highlightBg
-                                : p === 0
-                                  ? color.bg.surface
-                                  : `rgba(34, 197, 94, ${0.1 + 0.6 * p})`,
-                          }}
-                        >
-                          {p.toFixed(2)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div>
-          <h4 style={{ marginBottom: '0.1rem' }}>Softmax</h4>
-          <code style={{ fontSize: font.size.sm, color: color.text.secondary }}>
-            pᵢ = e^xᵢ / Σ e^x
-          </code>
-          <table
-            style={{
-              borderCollapse: 'collapse',
-              fontFamily: 'monospace',
-              fontSize: font.size.md,
-            }}
-          >
-            <thead>
-              <tr>
-                <th style={{ padding: '0.25rem 0.5rem' }}></th>
-                {VOCAB.map((w) => (
-                  <th
-                    key={w}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      borderBottom: `1px solid ${color.border.strong}`,
-                    }}
-                  >
-                    {w}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {counts.map((row, i) => {
-                const sm = softmaxRow(row);
-                return (
-                  <tr key={VOCAB[i]}>
-                    <th
-                      style={{
-                        textAlign: 'right',
-                        padding: '0.25rem 0.5rem',
-                        borderRight: `1px solid ${color.border.strong}`,
-                      }}
-                    >
-                      {VOCAB[i]}
-                    </th>
-                    {sm.map((p, j) => (
-                      <td
-                        key={j}
-                        style={{
-                          padding: '0.25rem 0.5rem',
-                          textAlign: 'right',
-                          background:
-                            VOCAB[i] === 'cat' && VOCAB[j] === 'on'
-                              ? color.highlightBg
-                              : `rgba(34, 197, 94, ${0.1 + 0.6 * p})`,
-                        }}
-                      >
-                        {p.toFixed(2)}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <ExplainMore>
-        Same counts, two normalizations. Softmax never produces a hard 0 (every
-        cell glows faintly) and compresses the gaps — an all-zero row even comes
-        out perfectly uniform. Only the <strong>empirical</strong> table is the
-        target the bigram model learns. After enough training steps,{' '}
-        <code>softmax(W[prev])</code> should approximate the corresponding row
-        here. Rows that sum to zero (tokens never seen as <code>prev</code>)
-        leave the neural model's row at its random init — there's no gradient
-        signal for them.
-      </ExplainMore>
-
       <h3>One-step trainer</h3>
-      <p style={{ maxWidth: font.prose, color: color.text.secondary, lineHeight: 1.5 }}>
-        <code>W</code> starts as random logits in <code>[-1, 1]</code> — note
-        they can be <em>negative</em>, which is exactly why the forward pass
-        uses softmax (exponentiate, then normalize) and not plain divide-by-sum.
-        Each step picks the next <code>(prev, target)</code> pair, runs the
-        forward pass to get <code>p = softmax(W[prev])</code>, computes the
-        gradient <code>p − y</code>, and updates row <code>W[prev]</code>. Walk
-        forward and watch the breakdown below — and <code>softmax(W)</code>{' '}
-        morph toward the empirical table above.
-      </p>
       <div
         style={{
           margin: '0.5rem 0',
@@ -544,7 +292,6 @@ export function Stage1FlowPage() {
       <div
         style={{
           flex: '0 1 auto',
-          maxWidth: font.prose,
           padding: space.md,
           background: color.bg.subtle,
           border: `1px solid ${color.border.default}`,
@@ -577,7 +324,9 @@ export function Stage1FlowPage() {
           </div>
           <div style={{ flex: '1 1 28ch', minWidth: '20ch' }}>
             <div style={{ color: color.text.secondary, marginBottom: space.sm }}>
-              corpus position (pair {pairIdx} of {pairs.length}):{' '}
+              corpus position (
+              {flash ? `pair ${flash.pairIdx} of ${pairs.length}` : 'not started yet'}
+              ):{' '}
               <span style={{ color: color.warning.fg, fontWeight: 'bold' }}>
                 a = prev (input)
               </span>
@@ -588,8 +337,9 @@ export function Stage1FlowPage() {
             </div>
             <div style={{ lineHeight: 2.4 }}>
               {corpusTokens.map((t, i) => {
-                const isPrev = i === pairIdx;
-                const isTarget = i === pairIdx + 1;
+                const markIdx = flash ? flash.pairIdx : -1;
+                const isPrev = i === markIdx;
+                const isTarget = i === markIdx + 1;
                 const marked = isPrev || isTarget;
                 return (
                   <span
@@ -630,11 +380,27 @@ export function Stage1FlowPage() {
               })}
             </div>
           </div>
-        </div>
-        <div style={{ marginTop: space.sm, color: color.text.secondary }}>
+          <div
+            style={{
+              flex: '1 1 30ch',
+              minWidth: '26ch',
+              ...(step === 0 && { opacity: 0.4, filter: 'grayscale(1)' }),
+            }}
+          >
+        <div style={{ marginTop: 0, color: color.text.secondary }}>
           forward pass: <code>p = softmax(W[prev])</code> — read row{' '}
-          <strong>{VOCAB[currentPair.prev]}</strong> of W, exponentiate each
-          logit, then divide by the total:
+          <span
+            style={{
+              background: color.highlightBg,
+              color: color.text.emphasis,
+              fontWeight: 'bold',
+              padding: '0 0.2rem',
+              borderRadius: radius.sm,
+            }}
+          >
+            {VOCAB[currentPair.prev]}
+          </span>{' '}
+          of W, exponentiate each logit, then divide by the total:
         </div>
         <table
           style={{
@@ -650,7 +416,19 @@ export function Stage1FlowPage() {
                 next
               </th>
               <th style={{ padding: '0.15rem 0.5rem', textAlign: 'right' }}>
-                x = W[{VOCAB[currentPair.prev]}]
+                x = W[
+                <span
+                  style={{
+                    background: color.highlightBg,
+                    color: color.text.emphasis,
+                    fontWeight: 'bold',
+                    padding: '0 0.2rem',
+                    borderRadius: radius.sm,
+                  }}
+                >
+                  {VOCAB[currentPair.prev]}
+                </span>
+                ]
               </th>
               <th style={{ padding: '0.15rem 0.5rem', textAlign: 'right' }}>
                 e^x
@@ -707,7 +485,15 @@ export function Stage1FlowPage() {
             </tr>
           </tbody>
         </table>
-        <div style={{ marginTop: space.sm, color: color.text.secondary }}>
+          </div>
+          <div
+            style={{
+              flex: '1 1 24ch',
+              minWidth: '20ch',
+              ...(step === 0 && { opacity: 0.4, filter: 'grayscale(1)' }),
+            }}
+          >
+        <div style={{ marginTop: 0, color: color.text.secondary }}>
           <code>y</code> = one-hot at the target (<strong>
             {VOCAB[currentPair.target]}
           </strong>
@@ -754,27 +540,11 @@ export function Stage1FlowPage() {
           <strong> up</strong>); every other entry is just <code>p</code>{' '}
           (positive → push those <strong>down</strong>).
         </div>
+          </div>
+        </div>
       </div>
 
       <div style={{ flex: '1 1 auto' }}>
-        {step === 0 && (
-          <div
-            style={{
-              display: 'inline-block',
-              margin: '0 0 0.5rem',
-              padding: '0.35rem 0.75rem',
-              background: color.warning.bg,
-              border: `1px solid ${color.highlight}`,
-              borderRadius: radius.sm,
-              color: color.warning.fg,
-              fontWeight: 'bold',
-              fontSize: font.size.sm,
-            }}
-          >
-            ⚠️ Training not started — these are completely random numbers (seed=
-            {seed}). softmax(W) is ~uniform; the model knows nothing yet.
-          </div>
-        )}
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
         <div>
           <h4>W (raw logits)</h4>
@@ -813,12 +583,13 @@ export function Stage1FlowPage() {
                 >
                   prev=a ↓
                 </th>
-                {VOCAB.map((w) => (
+                {VOCAB.map((w, j) => (
                   <th
                     key={w}
                     style={{
                       padding: '0.25rem 0.5rem',
                       borderBottom: `1px solid ${color.border.strong}`,
+                      ...bHead(j),
                     }}
                   >
                     {w}
@@ -834,16 +605,12 @@ export function Stage1FlowPage() {
                       textAlign: 'right',
                       padding: '0.25rem 0.5rem',
                       borderRight: `1px solid ${color.border.strong}`,
+                      ...aHead(i),
                     }}
                   >
                     {VOCAB[i]}
                   </th>
                   {row.map((v, j) => {
-                    const t = v / wMaxAbs;
-                    const bg =
-                      t >= 0
-                        ? `rgba(59, 130, 246, ${0.1 + 0.5 * t})`
-                        : `rgba(239, 68, 68, ${0.1 + 0.5 * -t})`;
                     const flashing = flash?.row === i;
                     const dir = flashing
                       ? Math.sign(v - flash.prevRow[j])
@@ -858,13 +625,14 @@ export function Stage1FlowPage() {
                           position: 'relative',
                           padding: '0.25rem 0.5rem',
                           textAlign: 'right',
-                          background: bg,
+                          background: trainedRows.has(i) ? undefined : color.bg.disabled,
                           animation: showOld
                             ? 'wflash 2s ease-out'
                             : undefined,
+                          ...cellBox(i, j),
                         }}
                       >
-                        {showOld && dir !== 0 && (
+                        {flashing && dir !== 0 && (
                           <span
                             style={{
                               position: 'absolute',
@@ -873,7 +641,7 @@ export function Stage1FlowPage() {
                               fontSize: '0.7rem',
                               fontWeight: 'bold',
                               color: dir > 0 ? color.success.fg : color.error.fg,
-                              animation: 'arrowpulse 0.8s ease-in-out infinite',
+                              animation: undefined,
                             }}
                           >
                             {dir > 0 ? '▲' : '▼'}
@@ -940,12 +708,13 @@ export function Stage1FlowPage() {
                 >
                   prev=a ↓
                 </th>
-                {VOCAB.map((w) => (
+                {VOCAB.map((w, j) => (
                   <th
                     key={w}
                     style={{
                       padding: '0.25rem 0.5rem',
                       borderBottom: `1px solid ${color.border.strong}`,
+                      ...bHead(j),
                     }}
                   >
                     {w}
@@ -961,6 +730,7 @@ export function Stage1FlowPage() {
                       textAlign: 'right',
                       padding: '0.25rem 0.5rem',
                       borderRight: `1px solid ${color.border.strong}`,
+                      ...aHead(i),
                     }}
                   >
                     {VOCAB[i]}
@@ -977,11 +747,12 @@ export function Stage1FlowPage() {
                         position: 'relative',
                         padding: '0.25rem 0.5rem',
                         textAlign: 'right',
-                        background: `rgba(34, 197, 94, ${0.1 + 0.6 * p})`,
+                        background: trainedRows.has(i) ? undefined : color.bg.disabled,
                         animation: showOld ? 'wflash 2s ease-out' : undefined,
+                        ...cellBox(i, j),
                       }}
                     >
-                      {showOld && dir !== 0 && (
+                      {flashing && dir !== 0 && (
                         <span
                           style={{
                             position: 'absolute',
@@ -990,7 +761,7 @@ export function Stage1FlowPage() {
                             fontSize: '0.7rem',
                             fontWeight: 'bold',
                             color: dir > 0 ? color.success.fg : color.error.fg,
-                            animation: 'arrowpulse 0.8s ease-in-out infinite',
+                            animation: undefined,
                           }}
                         >
                           {dir > 0 ? '▲' : '▼'}
@@ -1019,39 +790,78 @@ export function Stage1FlowPage() {
             </tbody>
           </table>
         </div>
+
+        <div>
+          <h4>Empirical (target)</h4>
+          <code style={{ fontSize: font.size.sm, color: color.text.secondary }}>
+            pᵢ = countᵢ / Σ count
+          </code>
+          <table
+            style={{
+              borderCollapse: 'collapse',
+              fontFamily: 'monospace',
+              fontSize: font.size.md,
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={{ padding: '0.25rem 0.5rem' }}></th>
+                {VOCAB.map((w) => (
+                  <th
+                    key={w}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      borderBottom: `1px solid ${color.border.strong}`,
+                    }}
+                  >
+                    {w}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {counts.map((row, i) => {
+                const rowSum = row.reduce((a, b) => a + b, 0);
+                return (
+                  <tr key={VOCAB[i]}>
+                    <th
+                      style={{
+                        textAlign: 'right',
+                        padding: '0.25rem 0.5rem',
+                        borderRight: `1px solid ${color.border.strong}`,
+                      }}
+                    >
+                      {VOCAB[i]}
+                    </th>
+                    {row.map((c, j) => {
+                      const p = rowSum === 0 ? 0 : c / rowSum;
+                      return (
+                        <td
+                          key={j}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            textAlign: 'right',
+                            background:
+                              VOCAB[i] === 'cat' && VOCAB[j] === 'on'
+                                ? color.highlightBg
+                                : p === 0
+                                  ? color.bg.surface
+                                  : `rgba(34, 197, 94, ${0.1 + 0.6 * p})`,
+                          }}
+                        >
+                          {p.toFixed(2)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
-      </div>
 
-      {lossHistory.length > 0 && (
-        <p style={{ fontFamily: 'monospace', color: color.text.secondary }}>
-          recent mean loss (last {Math.min(lossHistory.length, 50)}):{' '}
-          {(
-            lossHistory.slice(-50).reduce((a, b) => a + b, 0) /
-            Math.min(lossHistory.length, 50)
-          ).toFixed(3)}
-        </p>
-      )}
-
-      <ExplainMore>
-        At step 0 every row of <code>softmax(W)</code> is roughly uniform.
-        Click <em>1 epoch</em> a few times and watch row <code>on</code>{' '}
-        collapse onto column <code>the</code> (since every <code>on</code> in
-        the corpus is followed by <code>the</code>), and row <code>cat</code>{' '}
-        spread mass roughly <code>0.6</code> on <code>on</code>,{' '}
-        <code>0.2</code> on <code>the</code>, <code>0.2</code> on{' '}
-        <code>in</code> — matching the empirical table. The neural model
-        rediscovers count-and-normalize one gradient step at a time.
-      </ExplainMore>
-
-      <h3>Per-row convergence: |softmax(W) − empirical|</h3>
-      <p style={{ maxWidth: font.prose, color: color.text.secondary, lineHeight: 1.5 }}>
-        Cell-wise absolute difference between the model's predicted
-        distribution and the empirical target. Red = the model is over- or
-        under-predicting that token. The <em>row error</em> column is total
-        variation distance between the two distributions (half of the L1
-        difference) — 0 means perfect match, 1 means fully disjoint.
-      </p>
+        <div>
+      <h4>Per-row convergence: |softmax(W) − empirical|</h4>
       <table
         style={{
           borderCollapse: 'collapse',
@@ -1061,13 +871,40 @@ export function Stage1FlowPage() {
       >
         <thead>
           <tr>
-            <th style={{ padding: '0.25rem 0.5rem' }}></th>
-            {VOCAB.map((w) => (
+            <th style={{ padding: '0 0.5rem' }}></th>
+            <th
+              colSpan={VOCAB.length}
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 'normal',
+                fontStyle: 'italic',
+                color: color.text.emphasis,
+                paddingBottom: '0.1rem',
+              }}
+            >
+              next = b →
+            </th>
+            <th style={{ padding: '0 0.5rem' }}></th>
+          </tr>
+          <tr>
+            <th
+              style={{
+                padding: '0.25rem 0.5rem',
+                fontSize: '0.75rem',
+                fontStyle: 'italic',
+                color: color.warning.fg,
+                textAlign: 'right',
+              }}
+            >
+              prev=a ↓
+            </th>
+            {VOCAB.map((w, j) => (
               <th
                 key={w}
                 style={{
                   padding: '0.25rem 0.5rem',
                   borderBottom: `1px solid ${color.border.strong}`,
+                  ...bHead(j),
                 }}
               >
                 {w}
@@ -1085,48 +922,106 @@ export function Stage1FlowPage() {
           </tr>
         </thead>
         <tbody>
-          {errorMatrix.map((row, i) => (
+          {errorMatrix.map((row, i) => {
+            const flashing = flash?.row === i;
+            const oldProbs = flashing ? softmaxRow(flash.prevRow) : null;
+            const showOld = flashing && flash.phase === 'old';
+            const oldRowError = oldProbs
+              ? oldProbs.reduce((acc, op, j) => acc + Math.abs(op - empirical[i][j]), 0) / 2
+              : rowErrors[i];
+            return (
             <tr key={VOCAB[i]}>
               <th
                 style={{
                   textAlign: 'right',
                   padding: '0.25rem 0.5rem',
                   borderRight: `1px solid ${color.border.strong}`,
+                  ...aHead(i),
                 }}
               >
                 {VOCAB[i]}
               </th>
               {row.map((d, j) => {
-                const a = Math.min(1, Math.abs(d) * 2);
+                const oldD = oldProbs ? oldProbs[j] - empirical[i][j] : d;
+                const dir = flashing ? Math.sign(d - oldD) : 0;
+                const shown = showOld ? oldD : d;
                 return (
                   <td
-                    key={j}
+                    key={flashing ? `${j}-${flash.tick}-${flash.phase}` : j}
                     style={{
+                      position: 'relative',
                       padding: '0.25rem 0.5rem',
                       textAlign: 'right',
-                      background: `rgba(239, 68, 68, ${0.05 + 0.6 * a})`,
-                      color: a > 0.5 ? color.text.inverse : color.text.secondary,
+                      background: trainedRows.has(i) ? undefined : color.bg.disabled,
+                      color: color.text.secondary,
+                      animation: showOld ? 'wflash 2s ease-out' : undefined,
+                      ...cellBox(i, j),
                     }}
                   >
-                    {d >= 0 ? '+' : ''}
-                    {d.toFixed(2)}
+                    {flashing && dir !== 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '-0.1rem',
+                          left: '0.15rem',
+                          fontSize: '0.7rem',
+                          fontWeight: 'bold',
+                          color: dir > 0 ? color.success.fg : color.error.fg,
+                          animation: undefined,
+                        }}
+                      >
+                        {dir > 0 ? '▲' : '▼'}
+                      </span>
+                    )}
+                    {flashing ? (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          animation:
+                            flash.phase === 'new' ? 'numFade 0.5s ease-out' : undefined,
+                        }}
+                      >
+                        {shown >= 0 ? '+' : ''}
+                        {shown.toFixed(2)}
+                      </span>
+                    ) : (
+                      <>
+                        {d >= 0 ? '+' : ''}
+                        {d.toFixed(2)}
+                      </>
+                    )}
                   </td>
                 );
               })}
               <td
                 style={{
+                  position: 'relative',
                   padding: '0.25rem 0.5rem',
                   textAlign: 'right',
                   borderLeft: `2px solid ${color.border.strong}`,
                   fontWeight: 'bold',
-                  background: `rgba(239, 68, 68, ${0.05 + 0.6 * Math.min(1, rowErrors[i] * 2)})`,
-                  color: rowErrors[i] * 2 > 0.5 ? color.text.inverse : color.text.secondary,
+                  background: trainedRows.has(i) ? undefined : color.bg.disabled,
+                  color: color.text.secondary,
+                  animation: showOld ? 'wflash 2s ease-out' : undefined,
                 }}
               >
-                {rowErrors[i].toFixed(3)}
+                {flashing ? (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      animation:
+                        flash.phase === 'new' ? 'numFade 0.5s ease-out' : undefined,
+                    }}
+                  >
+                    {(showOld ? oldRowError : rowErrors[i]).toFixed(3)}
+                  </span>
+                ) : (
+                  rowErrors[i].toFixed(3)
+                )}
               </td>
             </tr>
-          ))}
+            );
+          })}
           <tr>
             <th
               style={{
@@ -1163,12 +1058,167 @@ export function Stage1FlowPage() {
           </tr>
         </tbody>
       </table>
-      <p style={{ maxWidth: font.prose, color: color.text.secondary, fontSize: font.size.sm }}>
-        Row <code>on</code> converges fastest because it has only one non-zero
-        target — one logit needs to dominate. Row <code>the</code> converges
-        slowest because it spreads mass across 4 tokens, so 4 logits need to
-        balance against each other.
-      </p>
+        </div>
+        </div>
+      </div>
+      </div>
+
+      <h3 style={{ marginTop: space.xl }}>
+        Corpus reference (fixed — derived from the counts above)
+      </h3>
+      <div
+        style={{
+          display: 'flex',
+          gap: '2rem',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+        }}
+      >
+        <div>
+          <h4 style={{ marginTop: 0 }}>Bigram counts (rows = prev, cols = next)</h4>
+          <table
+            style={{
+              borderCollapse: 'collapse',
+              fontFamily: 'monospace',
+              fontSize: font.size.md,
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={{ padding: '0.25rem 0.5rem' }}></th>
+                {VOCAB.map((w) => (
+                  <th
+                    key={w}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      borderBottom: `1px solid ${color.border.strong}`,
+                    }}
+                  >
+                    {w}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {counts.map((row, i) => (
+                <tr key={VOCAB[i]}>
+                  <th
+                    style={{
+                      textAlign: 'right',
+                      padding: '0.25rem 0.5rem',
+                      borderRight: `1px solid ${color.border.strong}`,
+                    }}
+                  >
+                    {VOCAB[i]}
+                  </th>
+                  {row.map((c, j) => (
+                    <td
+                      key={j}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        textAlign: 'right',
+                        background:
+                          VOCAB[i] === 'cat' && VOCAB[j] === 'on'
+                            ? color.highlightBg
+                            : c === 0
+                              ? color.bg.surface
+                              : 'transparent',
+                      }}
+                    >
+                      {c}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <h4 style={{ marginBottom: '0.1rem' }}>Softmax</h4>
+          <code style={{ fontSize: font.size.sm, color: color.text.secondary }}>
+            pᵢ = e^xᵢ / Σ e^x
+          </code>
+          <table
+            style={{
+              borderCollapse: 'collapse',
+              fontFamily: 'monospace',
+              fontSize: font.size.md,
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={{ padding: '0.25rem 0.5rem' }}></th>
+                {VOCAB.map((w) => (
+                  <th
+                    key={w}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      borderBottom: `1px solid ${color.border.strong}`,
+                    }}
+                  >
+                    {w}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {counts.map((row, i) => {
+                const sm = softmaxRow(row);
+                return (
+                  <tr key={VOCAB[i]}>
+                    <th
+                      style={{
+                        textAlign: 'right',
+                        padding: '0.25rem 0.5rem',
+                        borderRight: `1px solid ${color.border.strong}`,
+                      }}
+                    >
+                      {VOCAB[i]}
+                    </th>
+                    {sm.map((p, j) => (
+                      <td
+                        key={j}
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          textAlign: 'right',
+                          background:
+                            VOCAB[i] === 'cat' && VOCAB[j] === 'on'
+                              ? color.highlightBg
+                              : `rgba(34, 197, 94, ${0.1 + 0.6 * p})`,
+                        }}
+                      >
+                        {p.toFixed(2)}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {lossHistory.length > 0 && (
+        <p style={{ fontFamily: 'monospace', color: color.text.secondary }}>
+          recent mean loss (last {Math.min(lossHistory.length, 50)}):{' '}
+          {(
+            lossHistory.slice(-50).reduce((a, b) => a + b, 0) /
+            Math.min(lossHistory.length, 50)
+          ).toFixed(3)}
+        </p>
+      )}
+
+      <ExplainMore>
+        At step 0 every row of <code>softmax(W)</code> is roughly uniform.
+        Click <em>1 epoch</em> a few times and watch row <code>on</code>{' '}
+        collapse onto column <code>the</code> (since every <code>on</code> in
+        the corpus is followed by <code>the</code>), and row <code>cat</code>{' '}
+        spread mass roughly <code>0.6</code> on <code>on</code>,{' '}
+        <code>0.2</code> on <code>the</code>, <code>0.2</code> on{' '}
+        <code>in</code> — matching the empirical table. The neural model
+        rediscovers count-and-normalize one gradient step at a time.
+      </ExplainMore>
 
       <h3>
         Final state: W after {FINAL_EPOCHS} epochs (lr=0.5, seed={seed})
@@ -1310,12 +1360,6 @@ export function Stage1FlowPage() {
         you the floor SGD can reach with this corpus, lr, and epoch budget —
         any residual error is just incomplete convergence, not a model-class
         limit.
-      </p>
-
-      <h3 style={{ marginTop: space.xxl }}>⚠️ Concepts to nail (from your quiz)</h3>
-      <p style={{ maxWidth: font.prose, color: color.text.secondary, lineHeight: 1.5 }}>
-        The eight you missed all live in the math, not the story. Each card puts
-        the trap you picked next to the truth, plus the why so it sticks.
       </p>
     </div>
   );

@@ -1,11 +1,16 @@
-import { Flex } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { bigramCounts, trainingPairs, randomMatrix, softmaxRow, trainToConvergence } from '../funcs';
 import { CORPUS_OPTIONS, type CorpusKey } from '../corpora';
 import { TrainingCorpus } from '../components/TrainingCorpus';
 import { Heatmap, probCellBg } from '../components/Heatmap';
 import { OneStepTrainer } from '../components/OneStepTrainer';
-import { WorkedExample } from '../components/WorkedExample';
+import { CurrentPairSummary } from '../components/CurrentPairSummary';
+import { CorpusPositionTracker } from '../components/CorpusPositionTracker';
+import { ForwardPassTable } from '../components/ForwardPassTable';
+import { GradientColumn } from '../components/GradientColumn';
+import { ForwardPassCaption } from '../components/ForwardPassCaption';
+import { FlashMatrixTable } from '../components/FlashMatrixTable';
+import { RowConvergenceTable } from '../components/RowConvergenceTable';
 import { RecentLoss } from '../components/RecentLoss';
 import { color, space } from '../theme';
 import {VOCAB} from "../consts"
@@ -137,15 +142,13 @@ export function Stage1FlowPage() {
   }
 
   return (
-    <div>
+    <>
       <h2>Bigram Forward + Backward</h2>
-      <Flex gap={space.xxl} wrap align="flex-start">
-        <TrainingCorpus
-          corpusKey={corpusKey}
-          onChange={setCorpusKey}
-          note="(changing this resets training)"
-        />
-      </Flex>
+      <TrainingCorpus
+        corpusKey={corpusKey}
+        onChange={setCorpusKey}
+        note="(changing this resets training)"
+      />
       <OneStepTrainer
         seed={seed}
         onSeedChange={setSeed}
@@ -157,42 +160,46 @@ export function Stage1FlowPage() {
         onStep={doStep}
         onReset={reset}
       />
-
-      <WorkedExample
-        vocab={VOCAB}
-        step={step}
-        flash={flash}
-        pairsLength={pairs.length}
-        corpusTokens={corpusTokens}
-        currentPair={currentPair}
-        prevLogits={prevLogits}
-        prevExps={prevExps}
-        prevExpSum={prevExpSum}
-        prevProbs={prevProbs}
-        prevGrad={prevGrad}
-        currentLogits={currentLogits}
-        currentExps={currentExps}
-        currentExpSum={currentExpSum}
-        currentProbs={currentProbs}
-        W={W}
-        softmaxW={softmaxW}
-        empirical={empirical}
-        errorMatrix={errorMatrix}
-        rowErrors={rowErrors}
-        totalError={totalError}
-        trainedRows={trainedRows}
-      />
-
-      <h3 style={{ marginTop: space.xl }}>
-        Corpus reference (fixed — derived from the counts above)
-      </h3>
-      <Flex gap="2rem" wrap align="flex-start">
-        <Heatmap
-          heading="Bigram counts (rows = prev, cols = next)"
-          headingStyle={{ marginTop: 0 }}
-          matrix={counts}
-          vocab={VOCAB}
-          formatValue={(c) => c}
+      <CurrentPairSummary vocab={VOCAB} prev={currentPair.prev} target={currentPair.target} started={step !== 0} />
+      <CorpusPositionTracker pairIdx={flash ? flash.pairIdx : null} pairsLength={pairs.length} corpusTokens={corpusTokens} />
+      <ForwardPassCaption prevToken={VOCAB[currentPair.prev]} />
+        {flash ? (
+          <>
+            <div
+              style={{
+                marginTop: '0.4rem',
+                fontSize: '0.8rem',
+                fontWeight: 'bold',
+                color: color.text.secondary,
+              }}
+            >
+              before this step — drives the gradient
+            </div>
+            <ForwardPassTable vocab={VOCAB} logits={prevLogits} exps={prevExps} expSum={prevExpSum} probs={prevProbs} targetIdx={currentPair.target} prevToken={VOCAB[currentPair.prev]} />
+            <div
+              style={{
+                marginTop: '0.6rem',
+                fontSize: '0.8rem',
+                fontWeight: 'bold',
+                color: color.text.secondary,
+              }}
+            >
+              after this step — result of the update
+            </div>
+            <ForwardPassTable vocab={VOCAB} logits={currentLogits} exps={currentExps} expSum={currentExpSum} probs={currentProbs} targetIdx={currentPair.target} prevToken={VOCAB[currentPair.prev]} />
+          </>
+        ) : (
+          <ForwardPassTable vocab={VOCAB} logits={currentLogits} exps={currentExps} expSum={currentExpSum} probs={currentProbs} targetIdx={currentPair.target} prevToken={VOCAB[currentPair.prev]} />
+        )}
+        <GradientColumn vocab={VOCAB} target={currentPair.target} prevProbs={prevProbs} prevGrad={prevGrad} dimmed={step === 0} />
+        <FlashMatrixTable heading="W (raw logits)" matrix={W} prevTransform={(row) => row} vocab={VOCAB} trainedRows={trainedRows} flash={flash} />
+        <FlashMatrixTable heading="softmax(W) per row" matrix={softmaxW} prevTransform={softmaxRow} vocab={VOCAB} trainedRows={trainedRows} flash={flash} />
+        <Heatmap heading="Empirical (target)" subHeading="pᵢ = countᵢ / Σ count" matrix={empirical} vocab={VOCAB} cellBackground={probCellBg} />
+        <RowConvergenceTable errorMatrix={errorMatrix} empirical={empirical} rowErrors={rowErrors} totalError={totalError} vocab={VOCAB} trainedRows={trainedRows} flash={flash} />
+        <h3 style={{ marginTop: space.xl }}>
+          Corpus reference (fixed — derived from the counts above)
+        </h3>
+        <Heatmap heading="Bigram counts (rows = prev, cols = next)" headingStyle={{ marginTop: 0 }} matrix={counts} vocab={VOCAB} formatValue={(c) => c}
           cellBackground={(c, i, j) =>
             VOCAB[i] === 'cat' && VOCAB[j] === 'on'
               ? color.highlightBg
@@ -200,39 +207,21 @@ export function Stage1FlowPage() {
                 ? color.bg.surface
                 : 'transparent'}
         />
-
-        <Heatmap
-          heading="Softmax"
-          subHeading="pᵢ = e^xᵢ / Σ e^x"
-          headingStyle={{ marginBottom: '0.1rem' }}
-          matrix={counts.map(softmaxRow)}
-          vocab={VOCAB}
-          cellBackground={probCellBg}
-        />
-      </Flex>
-
-      <RecentLoss lossHistory={lossHistory} />
-
-      <Flex gap="2rem" wrap>
-        <Heatmap
-          heading="W_final (raw logits)"
-          matrix={wFinal}
-          vocab={VOCAB}
-          cellBackground={(v) => {
+        <Heatmap heading="Softmax" subHeading="pᵢ = e^xᵢ / Σ e^x" headingStyle={{ marginBottom: '0.1rem' }} matrix={counts.map(softmaxRow)} vocab={VOCAB} cellBackground={probCellBg} />
+        <RecentLoss lossHistory={lossHistory} />
+        <Heatmap heading="W_final (raw logits)" matrix={wFinal} vocab={VOCAB} cellBackground={(v) => {
             const t = v / wFinalMaxAbs;
             return t >= 0
               ? `rgba(59, 130, 246, ${0.1 + 0.5 * t})`
               : `rgba(239, 68, 68, ${0.1 + 0.5 * -t})`;
           }}
         />
-
         <Heatmap
           heading="softmax(W_final) per row"
           matrix={softmaxWFinal}
           vocab={VOCAB}
           cellBackground={(p) => `rgba(34, 197, 94, ${0.1 + 0.6 * p})`}
         />
-      </Flex>
-    </div>
+    </>
   );
 }

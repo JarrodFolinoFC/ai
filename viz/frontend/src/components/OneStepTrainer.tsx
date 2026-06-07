@@ -1,0 +1,120 @@
+import { color, space, font } from '../theme';
+
+interface OneStepTrainerProps {
+  seed: number;
+  onSeedChange: (seed: number) => void;
+  lr: number;
+  onLrChange: (lr: number) => void;
+  // Number of training pairs in one epoch.
+  pairsLength: number;
+  // Total pairs processed so far.
+  step: number;
+  // Cross-entropy loss of the current worked example.
+  currentLoss: number;
+  // Advance training by n pairs.
+  onStep: (n: number) => void;
+  onReset: () => void;
+}
+
+// Controls for the single-step bigram trainer: seed/lr inputs, step buttons,
+// a status readout, and an epoch progress bar.
+export function OneStepTrainer({
+  seed,
+  onSeedChange,
+  lr,
+  onLrChange,
+  pairsLength,
+  step,
+  currentLoss,
+  onStep,
+  onReset,
+}: OneStepTrainerProps) {
+  return (
+    <>
+      <h3>One-step trainer</h3>
+      <div
+        style={{
+          margin: '0.5rem 0',
+          display: 'flex',
+          gap: space.lg,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
+        <label>
+          seed:&nbsp;
+          <input
+            type="number"
+            value={seed}
+            onChange={(e) => onSeedChange(Number(e.target.value))}
+            style={{ width: '5rem' }}
+          />
+        </label>
+        <label>
+          lr:&nbsp;
+          <input
+            type="number"
+            step={0.05}
+            min={0}
+            value={lr}
+            onChange={(e) => onLrChange(Number(e.target.value))}
+            style={{ width: '5rem' }}
+          />
+        </label>
+        <button type="button" onClick={() => onStep(1)}>
+          step ×1
+        </button>
+        <button type="button" onClick={() => onStep(10)}>
+          step ×10
+        </button>
+        <button type="button" onClick={() => onStep(pairsLength)}>
+          1 epoch ({pairsLength})
+        </button>
+        <button type="button" onClick={() => onStep(pairsLength * 50)}>
+          50 epochs
+        </button>
+        <button type="button" onClick={onReset}>
+          reset
+        </button>
+        <span style={{ fontFamily: 'monospace', color: color.text.secondary }}>
+          step={step} &nbsp; epoch={Math.floor(step / pairsLength)} &nbsp;
+          loss={currentLoss.toFixed(3)}
+        </span>
+      </div>
+      <div style={{ maxWidth: font.prose, margin: '0.25rem 0 0.75rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontFamily: 'monospace',
+            fontSize: '0.8rem',
+            color: color.text.secondary,
+            marginBottom: '0.2rem',
+          }}
+        >
+          <span>epoch {Math.floor(step / pairsLength)} progress</span>
+          <span>
+            {step % pairsLength}/{pairsLength} pairs
+          </span>
+        </div>
+        <div
+          style={{
+            height: '0.6rem',
+            background: color.bg.disabled,
+            borderRadius: '999px',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              width: `${((step % pairsLength) / pairsLength) * 100}%`,
+              height: '100%',
+              background: color.positive,
+              transition: 'width 0.15s ease',
+            }}
+          />
+        </div>
+      </div>
+    </>
+  );
+}

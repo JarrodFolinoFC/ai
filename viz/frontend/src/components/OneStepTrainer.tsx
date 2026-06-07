@@ -1,3 +1,5 @@
+import { Flex } from 'antd';
+
 import { color, space, font } from '../theme';
 
 interface OneStepTrainerProps {
@@ -31,57 +33,51 @@ export function OneStepTrainer({
 }: OneStepTrainerProps) {
   return (
     <>
-      <h3>One-step trainer</h3>
-      <div
-        style={{
-          margin: '0.5rem 0',
-          display: 'flex',
-          gap: space.lg,
-          flexWrap: 'wrap',
-          alignItems: 'center',
-        }}
-      >
-        <label>
-          seed:&nbsp;
-          <input
-            type="number"
-            value={seed}
-            onChange={(e) => onSeedChange(Number(e.target.value))}
-            style={{ width: '5rem' }}
-          />
-        </label>
-        <label>
-          lr:&nbsp;
-          <input
-            type="number"
-            step={0.05}
-            min={0}
-            value={lr}
-            onChange={(e) => onLrChange(Number(e.target.value))}
-            style={{ width: '5rem' }}
-          />
-        </label>
-        <button type="button" onClick={() => onStep(1)}>
-          step ×1
-        </button>
-        <button type="button" onClick={() => onStep(10)}>
-          step ×10
-        </button>
-        <button type="button" onClick={() => onStep(pairsLength)}>
-          1 epoch ({pairsLength})
-        </button>
-        <button type="button" onClick={() => onStep(pairsLength * 50)}>
-          50 epochs
-        </button>
-        <button type="button" onClick={onReset}>
-          reset
-        </button>
+      <Flex vertical gap={space.sm} style={{ margin: '0.5rem 0' }}>
+        <Flex gap={space.lg} wrap align="center">
+          <label>
+            seed:&nbsp;
+            <input
+              type="number"
+              value={seed}
+              onChange={(e) => onSeedChange(Number(e.target.value))}
+              style={{ width: '5rem' }}
+            />
+          </label>
+          <label>
+            lr:&nbsp;
+            <input
+              type="number"
+              step={0.05}
+              min={0}
+              value={lr}
+              onChange={(e) => onLrChange(Number(e.target.value))}
+              style={{ width: '5rem' }}
+            />
+          </label>
+        </Flex>
+        <Flex gap={space.sm} wrap align="center">
+          <button type="button" onClick={() => onStep(1)}>
+            step ×1
+          </button>
+          <button type="button" onClick={() => onStep(10)}>
+            step ×10
+          </button>
+          <button type="button" onClick={() => onStep(pairsLength)}>
+            1 epoch ({pairsLength})
+          </button>
+          <button type="button" onClick={() => onStep(pairsLength * 50)}>
+            50 epochs
+          </button>
+          <button type="button" onClick={onReset}>
+            reset
+          </button>
+        </Flex>
         <span style={{ fontFamily: 'monospace', color: color.text.secondary }}>
           step={step} &nbsp; epoch={Math.floor(step / pairsLength)} &nbsp;
           loss={currentLoss.toFixed(3)}
         </span>
-      </div>
-      <div style={{ maxWidth: font.prose, margin: '0.25rem 0 0.75rem' }}>
+        <div style={{ maxWidth: font.prose }}>
         <div
           style={{
             display: 'flex',
@@ -114,7 +110,8 @@ export function OneStepTrainer({
             }}
           />
         </div>
-      </div>
+        </div>
+      </Flex>
     </>
   );
 }

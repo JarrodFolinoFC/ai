@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.1/.schema/devbox.schema.json",
+  "packages": [
+    "poetry@latest",
+    "uv@latest",
+    "cacert@latest",
+    "python311Packages.jupyterlab@latest",
+    "python311Packages.ipykernel@latest",
+    "python311Packages.numpy@latest",
+    "python311Packages.pandas@latest",
+    "python311Packages.scikit-learn@latest",
+    "python311Packages.matplotlib@latest",
+    "python311Packages.torch-bin@latest",
+    "nodejs@22"
+  ],
+  "shell": {
+    "init_hook": [
+      "export SSL_CERT_FILE=$(find /nix/store -name 'ca-bundle.crt' -path '*/cacert*/etc/ssl/certs/*' 2>/dev/null | sort -V | tail -1)",
+      "export NIX_SSL_CERT_FILE=$SSL_CERT_FILE"
+    ],
+    "scripts": {
+      "test": [
+        "echo \"Error: no test specified\" && exit 1"
+      ],
+      "lab": [
+        "security export -t certs -f pemseq -k /Library/Keychains/System.keychain 2>/dev/null > /tmp/combined-ca.pem",
+        "security export -t certs -f pemseq -k /System/Library/Keychains/SystemRootCertificates.keychain 2>/dev/null >> /tmp/combined-ca.pem",
+        "cat /etc/ssl/cert.pem >> /tmp/combined-ca.pem",
+        "export SSL_CERT_FILE=/tmp/combined-ca.pem NIX_SSL_CERT_FILE=/tmp/combined-ca.pem REQUESTS_CA_BUNDLE=/tmp/combined-ca.pem && jupyter-lab ibm_exercises/"
+      ],
+      "run": [
+        "security export -t certs -f pemseq -k /Library/Keychains/System.keychain 2>/dev/null > /tmp/combined-ca.pem",
+        "security export -t certs -f pemseq -k /System/Library/Keychains/SystemRootCertificates.keychain 2>/dev/null >> /tmp/combined-ca.pem",
+        "cat /etc/ssl/cert.pem >> /tmp/combined-ca.pem",
+        "export SSL_CERT_FILE=/tmp/combined-ca.pem NIX_SSL_CERT_FILE=/tmp/combined-ca.pem REQUESTS_CA_BUNDLE=/tmp/combined-ca.pem && cd simple-ds && poetry run python src/simple_ds/main.py"
+      ]
+    }
+  }
+}

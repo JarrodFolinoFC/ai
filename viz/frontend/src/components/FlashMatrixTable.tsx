@@ -1,6 +1,7 @@
 import { color, font } from '../theme';
 import { flashStyles, type Flash } from '../flashStyles';
 import { ChangeBadge } from './ChangeBadge';
+import { Panel } from './Panel';
 
 interface FlashMatrixTableProps {
   heading: string;
@@ -27,8 +28,7 @@ export function FlashMatrixTable({
   const { aHead, bHead, cellBox } = flashStyles(flash);
 
   return (
-    <div>
-      <h4>{heading}</h4>
+    <Panel title={heading}>
       <table
         style={{
           borderCollapse: 'collapse',
@@ -87,13 +87,24 @@ export function FlashMatrixTable({
                       key={j}
                       style={{
                         position: 'relative',
+                        // Wide enough for the two-number ChangeBadge so the
+                        // column doesn't widen when a row flashes.
+                        minWidth: '6rem',
                         padding: '0.25rem 0.5rem',
                         textAlign: 'right',
                         background: trainedRows.has(i) ? undefined : color.bg.disabled,
                         ...cellBox(i, j),
                       }}
                     >
-                      {flashing && <ChangeBadge prev={prev} delta={delta} />}
+                      {flashing ? (
+                        <ChangeBadge prev={prev} delta={delta} />
+                      ) : (
+                        // Reserve the badge's line height so the table doesn't
+                        // grow when a row flashes (matches ChangeBadge metrics).
+                        <div style={{ fontSize: '0.6rem', lineHeight: 1.1, marginBottom: '0.1rem' }}>
+                          &nbsp;
+                        </div>
+                      )}
                       {v.toFixed(2)}
                     </td>
                   );
@@ -103,6 +114,6 @@ export function FlashMatrixTable({
           })}
         </tbody>
       </table>
-    </div>
+    </Panel>
   );
 }

@@ -1,6 +1,7 @@
 import { Flex } from 'antd';
 
 import { color, space, font } from '../theme';
+import { Panel } from './Panel';
 
 interface OneStepTrainerProps {
   seed: number;
@@ -32,8 +33,8 @@ export function OneStepTrainer({
   onReset,
 }: OneStepTrainerProps) {
   return (
-    <>
-      <Flex vertical gap={space.sm} style={{ margin: '0.5rem 0' }}>
+    <Panel title="One-step trainer">
+      <Flex vertical gap={space.sm}>
         <Flex gap={space.lg} wrap align="center">
           <label>
             seed:&nbsp;
@@ -112,6 +113,6 @@ export function OneStepTrainer({
         </div>
         </div>
       </Flex>
-    </>
+    </Panel>
   );
 }

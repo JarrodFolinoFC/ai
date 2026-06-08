@@ -1,14 +1,7 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { color, font } from '../theme';
-import { VOCAB } from '../consts';
-
-export const probCellBg = (p: number, i: number, j: number) =>
-  VOCAB[i] === 'cat' && VOCAB[j] === 'on'
-    ? color.highlightBg
-    : p === 0
-      ? color.bg.surface
-      : `rgba(34, 197, 94, ${0.1 + 0.6 * p})`;
+import { Panel } from './Panel';
 
 interface HeatmapProps {
   heading: string;
@@ -18,7 +11,6 @@ interface HeatmapProps {
   cellBackground: (value: number, i: number, j: number) => string;
   // How to render a cell's value; defaults to 2-decimal fixed (counts pass an integer formatter).
   formatValue?: (value: number) => ReactNode;
-  headingStyle?: CSSProperties;
 }
 
 export function Heatmap({
@@ -28,11 +20,9 @@ export function Heatmap({
   vocab,
   cellBackground,
   formatValue = (v) => v.toFixed(2),
-  headingStyle,
 }: HeatmapProps) {
   return (
-    <div>
-      <h4 style={headingStyle}>{heading}</h4>
+    <Panel title={heading}>
       {subHeading !== undefined && (
         <code style={{ fontSize: font.size.sm, color: color.text.secondary }}>
           {subHeading}
@@ -89,6 +79,6 @@ export function Heatmap({
           ))}
         </tbody>
       </table>
-    </div>
+    </Panel>
   );
 }

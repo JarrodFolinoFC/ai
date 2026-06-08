@@ -1,4 +1,5 @@
 import { color } from '../theme';
+import { Panel } from './Panel';
 
 interface GradientColumnProps {
   vocab: readonly string[];
@@ -17,13 +18,7 @@ interface GradientColumnProps {
 // p − y that each weight is nudged against.
 export function GradientColumn({ vocab, target, prevProbs, prevGrad, dimmed }: GradientColumnProps) {
   return (
-    <div
-      style={{
-        flex: '1 1 24ch',
-        minWidth: '20ch',
-        ...(dimmed && { opacity: 0.4, filter: 'grayscale(1)' }),
-      }}
-    >
+    <Panel title="Gradient (p − y)" dimmed={dimmed}>
       <div style={{ marginTop: 0, color: color.text.secondary }}>
         <code>y</code> = one-hot at the target (<strong>
           {vocab[target]}
@@ -66,13 +61,6 @@ export function GradientColumn({ vocab, target, prevProbs, prevGrad, dimmed }: G
         ))}
         ]
       </div>
-      <div style={{ marginTop: '0.35rem', color: color.text.secondary, fontSize: '0.8rem' }}>
-        Uses <code>p</code> from <strong>before</strong> the step (the “before”
-        table). The target entry is <code>p − 1</code> (negative → push that
-        logit <strong> up</strong>); every other entry is just <code>p</code>{' '}
-        (positive → push those <strong>down</strong>). Each weight then moves by{' '}
-        <code>−lr·(p − y)</code>.
-      </div>
-    </div>
+    </Panel>
   );
 }

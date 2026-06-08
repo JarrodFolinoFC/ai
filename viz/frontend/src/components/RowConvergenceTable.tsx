@@ -2,6 +2,7 @@ import { softmaxRow } from '../funcs';
 import { color, font } from '../theme';
 import { flashStyles, type Flash } from '../flashStyles';
 import { ChangeBadge } from './ChangeBadge';
+import { Panel } from './Panel';
 
 interface RowConvergenceTableProps {
   // Signed per-cell error: softmax(W) − empirical.
@@ -30,8 +31,7 @@ export function RowConvergenceTable({
   const { aHead, bHead, cellBox } = flashStyles(flash);
 
   return (
-    <div>
-      <h4>Per-row convergence: |softmax(W) − empirical|</h4>
+    <Panel title="Per-row convergence: |softmax(W) − empirical|">
       <table
         style={{
           borderCollapse: 'collapse',
@@ -173,6 +173,6 @@ export function RowConvergenceTable({
           </tr>
         </tbody>
       </table>
-    </div>
+    </Panel>
   );
 }

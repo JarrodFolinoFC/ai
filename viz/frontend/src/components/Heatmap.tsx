@@ -5,13 +5,24 @@ import { Panel } from './Panel';
 
 interface HeatmapProps {
   heading: string;
-  subHeading?: string;
+  subHeading?: ReactNode;
   matrix: number[][];
   vocab: readonly string[];
   cellBackground: (value: number, i: number, j: number) => string;
   // How to render a cell's value; defaults to 2-decimal fixed (counts pass an integer formatter).
   formatValue?: (value: number) => ReactNode;
+  // Greyed out (e.g. before training has started).
+  dimmed?: boolean;
+  // When provided, rows whose index is NOT in this set are greyed individually
+  // (e.g. rows that haven't received a gradient update yet).
+  trainedRows?: Set<number>;
+  // Mark the card as live-updating (adds a step badge to the title).
+  live?: boolean;
+  // Override the step shown in the live badge (e.g. a previous-step card).
+  badgeStep?: number;
 }
+
+const dimRow = { opacity: 0.4, filter: 'grayscale(1)' };
 
 export function Heatmap({
   heading,
@@ -20,13 +31,17 @@ export function Heatmap({
   vocab,
   cellBackground,
   formatValue = (v) => v.toFixed(2),
+  dimmed = false,
+  trainedRows,
+  live = false,
+  badgeStep,
 }: HeatmapProps) {
   return (
-    <Panel title={heading}>
+    <Panel title={heading} dimmed={dimmed} live={live} badgeStep={badgeStep}>
       {subHeading !== undefined && (
-        <code style={{ fontSize: font.size.sm, color: color.text.secondary }}>
+        <div style={{ fontSize: font.size.sm, color: color.text.secondary }}>
           {subHeading}
-        </code>
+        </div>
       )}
       <table
         style={{
@@ -53,7 +68,7 @@ export function Heatmap({
         </thead>
         <tbody>
           {matrix.map((row, i) => (
-            <tr key={vocab[i]}>
+            <tr key={vocab[i]} style={trainedRows && !trainedRows.has(i) ? dimRow : undefined}>
               <th
                 style={{
                   textAlign: 'right',

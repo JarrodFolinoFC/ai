@@ -2,6 +2,7 @@ import { Flex } from 'antd';
 
 import { color, space, font } from '../theme';
 import { Panel } from './Panel';
+import { Term } from './Term';
 
 interface OneStepTrainerProps {
   seed: number;
@@ -37,7 +38,11 @@ export function OneStepTrainer({
       <Flex vertical gap={space.sm}>
         <Flex gap={space.lg} wrap align="center">
           <label>
-            seed:&nbsp;
+            <Term
+              label="seed"
+              explain="Random seed: fixes the random number generator so weight initialization and any shuffling are reproducible. Same seed → same run; change it to try a different starting point."
+            />
+            :&nbsp;
             <input
               type="number"
               value={seed}
@@ -46,7 +51,12 @@ export function OneStepTrainer({
             />
           </label>
           <label>
-            lr:&nbsp;
+            <Term
+              label="lr"
+              explain="Learning rate (η): how big a step each update takes down the loss gradient. Higher learns faster but can overshoot and diverge; lower is stabler but slower."
+              formula="\theta \leftarrow \theta - \eta \, \nabla_\theta \mathcal{L}"
+            />
+            :&nbsp;
             <input
               type="number"
               step={0.05}
@@ -75,8 +85,23 @@ export function OneStepTrainer({
           </button>
         </Flex>
         <span style={{ fontFamily: 'monospace', color: color.text.secondary }}>
-          step={step} &nbsp; epoch={Math.floor(step / pairsLength)} &nbsp;
-          loss={currentLoss.toFixed(3)}
+          <Term
+            label="step"
+            explain="Total number of training pairs processed so far. Each step does one forward pass + weight update on a single (context → next-token) pair."
+          />
+          ={step} &nbsp;
+          <Term
+            label="epoch"
+            explain="One full pass over all training pairs. Computed as step ÷ pairs-per-epoch, so it increments once every full sweep through the corpus."
+            formula="\text{epoch} = \left\lfloor \frac{\text{step}}{N_{\text{pairs}}} \right\rfloor"
+          />
+          ={Math.floor(step / pairsLength)} &nbsp;
+          <Term
+            label="loss"
+            explain="Cross-entropy loss of the current worked example: how surprised the model is by the correct next token. Lower is better; it falls as training improves the predictions."
+            formula="\mathcal{L} = -\log p_\theta(\text{target} \mid \text{context})"
+          />
+          ={currentLoss.toFixed(3)}
         </span>
         <div style={{ maxWidth: font.prose }}>
         <div

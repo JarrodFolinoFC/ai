@@ -1,5 +1,7 @@
-import { color } from '../theme';
+import { color, space } from '../theme';
+import { FormulaDisplay } from './FormulaDisplay';
 import { Panel } from './Panel';
+import { Term } from './Term';
 
 interface GradientColumnProps {
   vocab: readonly string[];
@@ -18,12 +20,22 @@ interface GradientColumnProps {
 // p − y that each weight is nudged against.
 export function GradientColumn({ vocab, target, prevProbs, prevGrad, dimmed }: GradientColumnProps) {
   return (
-    <Panel title="Gradient (p − y)" dimmed={dimmed}>
-      <div style={{ marginTop: 0, color: color.text.secondary }}>
-        <code>y</code> = one-hot at the target (<strong>
-          {vocab[target]}
-        </strong>
-        ): 1 there, 0 elsewhere:
+    <Panel title="Gradient (p − y)" dimmed={dimmed} live>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: space.xs }}>
+      <FormulaDisplay latex={`\\frac{\\partial \\mathcal{L}}{\\partial x_i} = p_i - y_i`} />
+      <div style={{ color: color.text.secondary }}>
+        <Term
+          label="p"
+          explain="The model's predicted next-token distribution: the softmax of the prev token's row of W."
+          formula={`p_i = \\frac{e^{x_i}}{\\sum_j e^{x_j}}`}
+        />{' '}
+        is the prediction;{' '}
+        <Term
+          label="y"
+          explain="The target as a one-hot vector: 1 at the actual next token, 0 everywhere else."
+          formula={`y_i = \\begin{cases} 1 & i = \\text{target} \\\\ 0 & \\text{otherwise} \\end{cases}`}
+        />{' '}
+        is the truth, one-hot at the target (<strong>{vocab[target]}</strong>).
       </div>
       <div style={{ marginTop: '0.15rem' }}>
         y = [
@@ -44,8 +56,13 @@ export function GradientColumn({ vocab, target, prevProbs, prevGrad, dimmed }: G
         })}
         ]
       </div>
-      <div style={{ marginTop: '0.15rem' }}>
-        p − y = [
+      <div>
+        <Term
+          label="p − y"
+          explain="The gradient of the cross-entropy loss with respect to the logits. Each weight is nudged in the opposite direction; it is positive where the model over-predicts and negative at the target."
+          formula={`\\frac{\\partial \\mathcal{L}}{\\partial x_i} = p_i - y_i`}
+        />{' '}
+        = [
         {prevGrad.map((g, i) => (
           <span
             key={i}
@@ -60,6 +77,7 @@ export function GradientColumn({ vocab, target, prevProbs, prevGrad, dimmed }: G
           </span>
         ))}
         ]
+      </div>
       </div>
     </Panel>
   );

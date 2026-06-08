@@ -82,7 +82,7 @@ export function TrainingCorpus({
   }
 
   return (
-    <Panel title={heading}>
+    <Panel title={heading} live>
       {sizeSelector}
       {currentPair && vocab && (
         <CurrentPairSummary

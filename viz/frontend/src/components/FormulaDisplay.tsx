@@ -3,18 +3,26 @@ import { useEffect, useRef } from 'react';
 
 interface Props {
   latex: string;
+  // Render inline (within a line of text) rather than as a centered block.
+  inline?: boolean;
 }
 
-export function FormulaDisplay({ latex }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
+export function FormulaDisplay({ latex, inline = false }: Props) {
+  const divRef = useRef<HTMLDivElement>(null);
+  const spanRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
-    katex.render(latex, ref.current, {
-      displayMode: true,
+    const el = inline ? spanRef.current : divRef.current;
+    if (!el) return;
+    katex.render(latex, el, {
+      displayMode: !inline,
       throwOnError: false,
     });
-  }, [latex]);
+  }, [latex, inline]);
 
-  return <div ref={ref} data-testid="formula-display" />;
+  return inline ? (
+    <span ref={spanRef} data-testid="formula-display" />
+  ) : (
+    <div ref={divRef} data-testid="formula-display" />
+  );
 }

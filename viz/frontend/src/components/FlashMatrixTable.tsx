@@ -15,6 +15,8 @@ interface FlashMatrixTableProps {
   trainedRows: Set<number>;
   // The training step currently being annotated, or null when nothing is flashed.
   flash: Flash | null;
+  // Mark the card as live-updating (adds a step badge to the title).
+  live?: boolean;
 }
 
 export function FlashMatrixTable({
@@ -24,11 +26,12 @@ export function FlashMatrixTable({
   vocab,
   trainedRows,
   flash,
+  live = false,
 }: FlashMatrixTableProps) {
   const { aHead, bHead, cellBox } = flashStyles(flash);
 
   return (
-    <Panel title={heading}>
+    <Panel title={heading} live={live}>
       <table
         style={{
           borderCollapse: 'collapse',

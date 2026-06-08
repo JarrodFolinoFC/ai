@@ -2,7 +2,9 @@ import { softmaxRow } from '../funcs';
 import { color, font } from '../theme';
 import { flashStyles, type Flash } from '../flashStyles';
 import { ChangeBadge } from './ChangeBadge';
+import { FormulaDisplay } from './FormulaDisplay';
 import { Panel } from './Panel';
+import { Term } from './Term';
 
 interface RowConvergenceTableProps {
   // Signed per-cell error: softmax(W) − empirical.
@@ -31,7 +33,18 @@ export function RowConvergenceTable({
   const { aHead, bHead, cellBox } = flashStyles(flash);
 
   return (
-    <Panel title="Per-row convergence: |softmax(W) − empirical|">
+    <Panel
+      live
+      title={
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4ch' }}>
+          Per-row convergence:
+          <FormulaDisplay
+            latex={`\\lvert \\text{softmax}(W) - \\text{empirical} \\rvert`}
+            inline
+          />
+        </span>
+      }
+    >
       <table
         style={{
           borderCollapse: 'collapse',
@@ -71,7 +84,11 @@ export function RowConvergenceTable({
                 borderLeft: `2px solid ${color.border.strong}`,
               }}
             >
-              row error
+              <Term
+                label="row error"
+                explain="Total absolute mismatch between the row's predicted distribution and the empirical target, halved so a perfect match is 0 and total disagreement is 1 (½ · L1 distance)."
+                formula={`\\tfrac{1}{2}\\sum_j \\lvert \\text{softmax}(W)_{ij} - \\text{empirical}_{ij} \\rvert`}
+              />
             </th>
           </tr>
         </thead>
@@ -154,10 +171,15 @@ export function RowConvergenceTable({
                 padding: '0.25rem 0.5rem',
                 borderTop: `2px solid ${color.border.strong}`,
                 color: color.text.secondary,
-                fontStyle: 'italic',
               }}
             >
-              average row error
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4ch' }}>
+                <span style={{ fontStyle: 'italic' }}>average row error =</span>
+                <FormulaDisplay
+                  latex={`\\frac{1}{R}\\sum_i \\tfrac{1}{2}\\sum_j \\lvert \\text{softmax}(W)_{ij} - \\text{empirical}_{ij} \\rvert`}
+                  inline
+                />
+              </span>
             </td>
             <td
               style={{

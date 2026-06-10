@@ -1,4 +1,5 @@
 import { Select } from 'antd';
+import { PRECISION } from '../consts';
 import katex from 'katex';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -91,7 +92,7 @@ function CorpusMatrix({
 }) {
   const externalSet = new Set(externalHighlightRows ?? []);
   const [hoverKey, setHoverKey] = useState<string | null>(null);
-  const rowKeys = matrix.map((row) => row.map((v) => v.toFixed(2)).join(','));
+  const rowKeys = matrix.map((row) => row.map((v) => v.toFixed(PRECISION)).join(','));
 
   return (
     <div data-testid={testId}>
@@ -177,7 +178,7 @@ function CorpusMatrix({
                         outlineOffset: showOutline ? '-2px' : undefined,
                       }}
                     >
-                      {v.toFixed(2)}
+                      {v.toFixed(PRECISION)}
                     </td>
                   );
                 })}

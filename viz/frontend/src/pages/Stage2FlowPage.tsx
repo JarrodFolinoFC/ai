@@ -1,4 +1,5 @@
 import { Select } from 'antd';
+import { PRECISION } from '../consts';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -139,7 +140,7 @@ function MatrixTable({
                   background: shade(v),
                 }}
               >
-                {v.toFixed(2)}
+                {v.toFixed(PRECISION)}
               </td>
             ))}
           </tr>
@@ -365,7 +366,7 @@ function ProbsTable({
                     outlineOffset: j === maxIdx ? '-2px' : undefined,
                   }}
                 >
-                  {v.toFixed(2)}
+                  {v.toFixed(PRECISION)}
                 </td>
               ))}
               <td
@@ -434,7 +435,7 @@ function VectorRow({
                 outline: highlightIdx === j ? `2px solid ${color.highlight}` : undefined,
               }}
             >
-              {v.toFixed(2)}
+              {v.toFixed(PRECISION)}
             </td>
           ))}
         </tr>
@@ -807,7 +808,7 @@ const tokenEmbeddings = Array.from(
 
 const tokenIndex = ${tokenIdx};  // "${tokenWord}"
 console.log(tokenEmbeddings[tokenIndex]);
-// = [${E[tokenIdx].map((v) => v.toFixed(2)).join(', ')}]`}
+// = [${E[tokenIdx].map((v) => v.toFixed(PRECISION)).join(', ')}]`}
           />
         }
       />
@@ -904,7 +905,7 @@ const positionEmbeddings = Array.from(
 
 const positionIndex = ${t};
 console.log(positionEmbeddings[positionIndex]);
-// = [${P[t].map((v) => v.toFixed(2)).join(', ')}]`}
+// = [${P[t].map((v) => v.toFixed(PRECISION)).join(', ')}]`}
           />
         }
       />
@@ -966,15 +967,15 @@ console.log(positionEmbeddings[positionIndex]);
         }
         code={
           <CodePanelInline
-            code={`const tokenEmbeddingRow = [${eRow.map((v) => v.toFixed(2)).join(', ')}];  // tokenEmbeddings[${tokenIdx}]
-const positionEmbeddingRow = [${pRow.map((v) => v.toFixed(2)).join(', ')}];  // positionEmbeddings[${t}]
+            code={`const tokenEmbeddingRow = [${eRow.map((v) => v.toFixed(PRECISION)).join(', ')}];  // tokenEmbeddings[${tokenIdx}]
+const positionEmbeddingRow = [${pRow.map((v) => v.toFixed(PRECISION)).join(', ')}];  // positionEmbeddings[${t}]
 
 const hiddenVector = tokenEmbeddingRow.map(
   (tokenValue, dim) => tokenValue + positionEmbeddingRow[dim]
 );
 
 console.log(hiddenVector);
-// = [${h.map((v) => v.toFixed(2)).join(', ')}]`}
+// = [${h.map((v) => v.toFixed(PRECISION)).join(', ')}]`}
           />
         }
       />
@@ -1046,7 +1047,7 @@ console.log(hiddenVector);
         }
         code={
           <CodePanelInline
-            code={`const hiddenVector = [${h.map((v) => v.toFixed(2)).join(', ')}];
+            code={`const hiddenVector = [${h.map((v) => v.toFixed(PRECISION)).join(', ')}];
 const vocabSize = ${VOCAB.length};
 const embeddingDim = ${N_EMBD};
 // unembedWeights is [embeddingDim × vocabSize]; bias starts at zeros
@@ -1061,7 +1062,7 @@ const logits = Array.from({ length: vocabSize }, (_, vocabIdx) => {
 });
 
 console.log(logits);
-// = [${logits.map((v) => v.toFixed(2)).join(', ')}]`}
+// = [${logits.map((v) => v.toFixed(PRECISION)).join(', ')}]`}
           />
         }
       />
@@ -1134,7 +1135,7 @@ console.log(logits);
         }
         code={
           <CodePanelInline
-            code={`const logits = [${logits.map((v) => v.toFixed(2)).join(', ')}];
+            code={`const logits = [${logits.map((v) => v.toFixed(PRECISION)).join(', ')}];
 
 const maxLogit = Math.max(...logits);
 const shiftedExps = logits.map((logit) => Math.exp(logit - maxLogit));

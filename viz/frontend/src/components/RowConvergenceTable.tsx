@@ -1,4 +1,5 @@
 import { softmaxRow } from '../funcs';
+import { PRECISION } from '../consts';
 import { color, font } from '../theme';
 import { flashStyles, type Flash } from '../flashStyles';
 import { ChangeBadge } from './ChangeBadge';
@@ -116,7 +117,7 @@ export function RowConvergenceTable({
                 </th>
                 {row.map((d, j) => {
                   const oldD = oldProbs ? oldProbs[j] - empirical[i][j] : d;
-                  const delta = flashing ? Number((d - oldD).toFixed(2)) : 0;
+                  const delta = flashing ? Number((d - oldD).toFixed(PRECISION)) : 0;
                   return (
                     <td
                       key={j}
@@ -131,7 +132,7 @@ export function RowConvergenceTable({
                     >
                       {flashing && <ChangeBadge prev={oldD} delta={delta} signedPrev />}
                       {d >= 0 ? '+' : ''}
-                      {d.toFixed(2)}
+                      {d.toFixed(PRECISION)}
                     </td>
                   );
                 })}

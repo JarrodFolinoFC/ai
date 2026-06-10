@@ -1,4 +1,5 @@
 import { divergingColormap } from '../colormaps';
+import { PRECISION } from '../consts';
 import { Heatmap } from './Heatmap';
 
 interface GapToFinalProps {
@@ -21,7 +22,7 @@ export function GapToFinal({ W, wFinal, vocab }: GapToFinalProps) {
       matrix={gap}
       vocab={vocab}
       cellBackground={divergingColormap(maxAbs)}
-      formatValue={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`}
+      formatValue={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(PRECISION)}`}
       live
     />
   );

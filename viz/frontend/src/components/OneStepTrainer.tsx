@@ -69,16 +69,13 @@ export function OneStepTrainer({
         </Flex>
         <Flex gap={space.sm} wrap align="center">
           <button type="button" onClick={() => onStep(1)}>
-            step ×1
+            step +1
           </button>
           <button type="button" onClick={() => onStep(10)}>
-            step ×10
+            step +10
           </button>
           <button type="button" onClick={() => onStep(pairsLength)}>
             1 epoch ({pairsLength})
-          </button>
-          <button type="button" onClick={() => onStep(pairsLength * 50)}>
-            50 epochs
           </button>
           <button type="button" onClick={onReset}>
             reset
@@ -114,27 +111,10 @@ export function OneStepTrainer({
             marginBottom: '0.2rem',
           }}
         >
-          <span>epoch {Math.floor(step / pairsLength)} progress</span>
+          <span>{step > 0 ? `epoch ${Math.floor(step / pairsLength)} progress` : "(training not started)"}</span>
           <span>
-            {step % pairsLength}/{pairsLength} pairs
+            {step % pairsLength}/{pairsLength} pair
           </span>
-        </div>
-        <div
-          style={{
-            height: '0.6rem',
-            background: color.bg.disabled,
-            borderRadius: '999px',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              width: `${((step % pairsLength) / pairsLength) * 100}%`,
-              height: '100%',
-              background: color.positive,
-              transition: 'width 0.15s ease',
-            }}
-          />
         </div>
         </div>
       </Flex>

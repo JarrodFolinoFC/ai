@@ -1,4 +1,5 @@
 import { color, font } from '../theme';
+import { PRECISION } from '../consts';
 import { flashStyles, type Flash } from '../flashStyles';
 import { ChangeBadge } from './ChangeBadge';
 import { Panel } from './Panel';
@@ -84,7 +85,7 @@ export function FlashMatrixTable({
                 </th>
                 {row.map((v, j) => {
                   const prev = prevRow ? prevRow[j] : v;
-                  const delta = flashing ? Number((v - prev).toFixed(2)) : 0;
+                  const delta = flashing ? Number((v - prev).toFixed(PRECISION)) : 0;
                   return (
                     <td
                       key={j}
@@ -108,7 +109,7 @@ export function FlashMatrixTable({
                           &nbsp;
                         </div>
                       )}
-                      {v.toFixed(2)}
+                      {v.toFixed(PRECISION)}
                     </td>
                   );
                 })}

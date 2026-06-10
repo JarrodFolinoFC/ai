@@ -1,4 +1,5 @@
 import { probCellBg } from '../colormaps';
+import { PRECISION } from '../consts';
 import { color, font, space } from '../theme';
 import { Panel } from './Panel';
 
@@ -52,7 +53,7 @@ function ProbTable({
                     background: probCellBg(v, i, j),
                   }}
                 >
-                  {v.toFixed(2)}
+                  {v.toFixed(PRECISION)}
                 </td>
               ))}
             </tr>

@@ -1,4 +1,5 @@
 import { color, space } from '../theme';
+import { PRECISION } from '../consts';
 import { FormulaDisplay } from './FormulaDisplay';
 import { Panel } from './Panel';
 import { Term } from './Term';
@@ -72,7 +73,7 @@ export function GradientColumn({ vocab, target, prevProbs, prevGrad, dimmed }: G
             }}
           >
             {g >= 0 ? '+' : ''}
-            {g.toFixed(2)}
+            {g.toFixed(PRECISION)}
             {i < prevGrad.length - 1 ? ', ' : ''}
           </span>
         ))}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { PRECISION } from '../consts';
 
 import { FormulaDisplay } from '../components/FormulaDisplay';
 import { Legend } from '../components/Legend';
@@ -118,7 +119,7 @@ function ScoreInputRow({
                       color: masked ? color.text.muted : color.text.primary,
                     }}
                   >
-                    {masked ? '−∞' : v.toFixed(2)}
+                    {masked ? '−∞' : v.toFixed(PRECISION)}
                   </td>
                 );
               })}

@@ -1,6 +1,3 @@
-// Single source of truth for design tokens. No framework imports — these plain
-// values are consumed by antd (via antdTheme.ts), inline styles, and d3.
-
 export const color = {
   text: {
     primary: '#0f172a', // absorbs near-black navies (#111827, #1f2937, #1e293b) and #000
@@ -18,6 +15,7 @@ export const color = {
   },
   border: {
     default: '#ddd',
+    emphasis: '#000',
     strong: '#ccc',
   },
 
@@ -33,6 +31,7 @@ export const color = {
 
   // selected cell / emphasis (amber)
   highlight: '#f59e0b', // solid amber border / accent
+  emphasis: '#000',
   highlightBg: '#fde68a', // highlighted cell / row background
 } as const;
 

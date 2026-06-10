@@ -1,4 +1,5 @@
 import { Select } from 'antd';
+import { PRECISION } from '../consts';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -152,7 +153,7 @@ function ScoresAndMaskTable({
                       color: Number.isFinite(s) ? color.text.primary : color.text.muted,
                     }}
                   >
-                    {Number.isFinite(s) ? s.toFixed(2) : '−∞'}
+                    {Number.isFinite(s) ? s.toFixed(PRECISION) : '−∞'}
                   </td>
                 );
               })}
@@ -215,7 +216,7 @@ function WeightsRow({
                       background: shadeProb(v),
                     }}
                   >
-                    {v.toFixed(2)}
+                    {v.toFixed(PRECISION)}
                   </td>
                 );
               })}
@@ -277,7 +278,7 @@ function CorpusRow({
                 color: Number.isFinite(v) ? color.text.primary : color.text.muted,
               }}
             >
-              {Number.isFinite(v) ? v.toFixed(2) : '−∞'}
+              {Number.isFinite(v) ? v.toFixed(PRECISION) : '−∞'}
             </td>
           ))}
         </tr>
@@ -353,7 +354,7 @@ function CorpusMatrix({
                     color: Number.isFinite(v) ? color.text.primary : color.text.muted,
                   }}
                 >
-                  {Number.isFinite(v) ? v.toFixed(2) : '−∞'}
+                  {Number.isFinite(v) ? v.toFixed(PRECISION) : '−∞'}
                 </td>
               ))}
             </tr>
@@ -596,7 +597,7 @@ export function Stage2cIFlowPage() {
       <CorpusMatrix
         data={H.map((row, j) => scaleVec(row, attnWeights[j]))}
         rowLabels={posLabels.map(
-          (l, j) => `${l}  (×${attnWeights[j].toFixed(2)})`
+          (l, j) => `${l}  (×${attnWeights[j].toFixed(PRECISION)})`
         )}
         colLabels={dimLabels}
         shade={(v) => shadeDiverging(v, hMaxAbs)}

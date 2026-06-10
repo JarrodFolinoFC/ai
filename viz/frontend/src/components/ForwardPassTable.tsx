@@ -1,4 +1,5 @@
 import { color, radius, font } from '../theme';
+import { PRECISION } from '../consts';
 
 interface ForwardPassTableProps {
   vocab: readonly string[];
@@ -68,10 +69,10 @@ export function ForwardPassTable({
               <td style={cell}>{vocab[i]}</td>
               <td style={numCell}>
                 {x >= 0 ? '+' : ''}
-                {x.toFixed(2)}
+                {x.toFixed(PRECISION)}
               </td>
               <td style={{ ...numCell, color: color.text.muted }}>
-                {exps[i].toFixed(2)}
+                {exps[i].toFixed(PRECISION)}
               </td>
               <td
                 style={{
@@ -79,7 +80,7 @@ export function ForwardPassTable({
                   color: isTarget ? color.text.emphasis : color.text.secondary,
                 }}
               >
-                {probs[i].toFixed(2)}
+                {probs[i].toFixed(PRECISION)}
               </td>
             </tr>
           );
@@ -87,7 +88,7 @@ export function ForwardPassTable({
         <tr style={{ color: color.text.muted, borderTop: `1px solid ${color.border.default}` }}>
           <td style={cell}>Σ</td>
           <td style={cell} />
-          <td style={numCell}>{expSum.toFixed(2)}</td>
+          <td style={numCell}>{expSum.toFixed(PRECISION)}</td>
           <td style={numCell}>1.00</td>
         </tr>
       </tbody>

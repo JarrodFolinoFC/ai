@@ -1,24 +1,26 @@
 import { Flex } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
-import { randomMatrix, softmaxRow } from '../funcs';
-import { TrainingCorpus } from './TrainingCorpus';
-import { Heatmap } from './Heatmap';
-import { OneStepTrainer } from './OneStepTrainer';
-import { GradientColumn } from './GradientColumn';
-import { FlashMatrixTable } from './FlashMatrixTable';
-import { RowConvergenceTable } from './RowConvergenceTable';
-import { RecentLoss } from './RecentLoss';
-import { WeightUpdate } from './WeightUpdate';
-import { WeightUpdateCode } from './WeightUpdateCode';
-import { RowSoftmax } from './RowSoftmax';
-import { GapToFinal } from './GapToFinal';
-import { DistanceToFinal } from './DistanceToFinal';
-import { PredictionsVsFinal } from './PredictionsVsFinal';
-import { PreviousWeights } from './PreviousWeights';
 import { BigramTrainer, type Flash } from '../bigramTrainer';
 import { divergingColormap } from '../colormaps';
-import { color, space } from '../theme';
+import { randomMatrix, softmaxRow } from '../funcs';
 import { StepContext } from '../stepContext';
+import { color, space } from '../theme';
+import { AfterSoftmax } from './AfterSoftmax';
+import { DistanceToFinal } from './DistanceToFinal';
+import { FlashMatrixTable } from './FlashMatrixTable';
+import { GapToFinal } from './GapToFinal';
+import { GradientColumn } from './GradientColumn';
+import { Heatmap } from './Heatmap';
+import { OneStepTrainer } from './OneStepTrainer';
+import { PredictionsVsFinal } from './PredictionsVsFinal';
+import { PreviousSoftmax } from './PreviousSoftmax';
+import { PreviousWeights } from './PreviousWeights';
+import { RecentLoss } from './RecentLoss';
+import { RowConvergenceTable } from './RowConvergenceTable';
+import { RowSoftmax } from './RowSoftmax';
+import { TrainingCorpus } from './TrainingCorpus';
+import { WeightUpdate } from './WeightUpdate';
+import { WeightUpdateCode } from './WeightUpdateCode';
 
 interface BigramFlowProps {
   vocab: readonly string[];
@@ -114,21 +116,20 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
       {/* <Heatmap heading="Empirical (target)" subHeading={<FormulaDisplay inline latex={`p_i = \\frac{\\text{count}_i}{\\sum \\text{count}}`} />} matrix={empirical} vocab={vocab} cellBackground={probCellBg} /> */}
       {/* <Heatmap heading="Softmax" subHeading={<FormulaDisplay inline latex={`p_i = \\frac{e^{x_i}}{\\sum e^{x}}`} />} matrix={counts.map(softmaxRow)} vocab={vocab} cellBackground={probCellBg} /> */}
 
-      {/* ── PER-STEP CHAIN: prev W → forward → loss → gradient → update → new W ── */}
-      {/* Chain 1. W as it stood at the previous step — the chain's first link (badge: step − 1). */}
-      <PreviousWeights vocab={vocab} W={W} flash={flash} step={step} />
-      {/* Chain 2. Forward pass on the previous-step row (x = W_prev[prev], e^x, p) — the p that drives the gradient. */}
-      <RowSoftmax
-        vocab={vocab} prevToken={vocab[currentPair.prev]} target={currentPair.target}
-        logits={prevLogits} exps={prevExps} expSum={prevExpSum} probs={prevProbs}
-      />
+      <PreviousWeights vocab={vocab} W={W} flash={flash} step={step} usedRow={currentPair.prev} />
+      <PreviousSoftmax vocab={vocab} W={W} flash={flash} step={step} usedRow={currentPair.prev} />
+      <RowSoftmax vocab={vocab} currentPair={currentPair} logits={prevLogits} exps={prevExps} expSum={prevExpSum} probs={prevProbs} />
       {/* <ForwardPassSection */}
       {/*   vocab={vocab} targetIdx={currentPair.target} prevToken={vocab[currentPair.prev]} */}
       {/*   before={{ logits: prevLogits, exps: prevExps, expSum: prevExpSum, probs: prevProbs }} */}
       {/*   current={{ logits: currentLogits, exps: currentExps, expSum: currentExpSum, probs: currentProbs }} */}
       {/* /> */}
-      {/* Chain 3. The full prediction matrix: softmax applied to every row of W. */}
-      <FlashMatrixTable heading="softmax(W) per row" matrix={softmaxW} prevTransform={softmaxRow} vocab={vocab} trainedRows={trainedRows} flash={flash} live />
+      {/* Chain 3. The full prediction matrix, before vs after this step's update. */}
+        <AfterSoftmax
+          vocab={vocab} prevToken={vocab[currentPair.prev]} target={currentPair.target}
+          row={W[currentPair.prev]} oldProbs={prevProbs}
+        />
+      <FlashMatrixTable heading="softmax(W) per row (after update)" matrix={softmaxW} prevTransform={softmaxRow} vocab={vocab} trainedRows={trainedRows} flash={flash} live />
       {/* Chain 4. The loss from the prediction vs the target, averaged over recent steps. */}
       <RecentLoss lossHistory={lossHistory} />
       {/* Chain 5. Backward pass: the gradient p − y that drives the weight update. */}
@@ -144,6 +145,7 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
         target={flash ? flash.target : currentPair.target}
         started={step !== 0}
       />
+      {/* Chain 6c. Post-update forward pass: softmax of the updated row, with Δp = new − old. */}
       {/* Chain 7. The resulting weights after this step: W (raw logits) — becomes next step's chain start. */}
       <FlashMatrixTable heading="W (raw logits)" matrix={W} prevTransform={(row) => row} vocab={vocab} trainedRows={trainedRows} flash={flash} live />
 

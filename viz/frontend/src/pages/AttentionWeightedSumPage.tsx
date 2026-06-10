@@ -1,4 +1,5 @@
 import { Select } from 'antd';
+import { PRECISION } from '../consts';
 import { useEffect, useMemo, useState } from 'react';
 
 import { FormulaDisplay } from '../components/FormulaDisplay';
@@ -211,7 +212,7 @@ function CorpusMatrix({
                     color: Number.isFinite(v) ? color.text.primary : color.text.muted,
                   }}
                 >
-                  {Number.isFinite(v) ? v.toFixed(2) : '−∞'}
+                  {Number.isFinite(v) ? v.toFixed(PRECISION) : '−∞'}
                 </td>
               ))}
             </tr>
@@ -270,7 +271,7 @@ function CorpusRow({
                   color: Number.isFinite(v) ? color.text.primary : color.text.muted,
                 }}
               >
-                {Number.isFinite(v) ? v.toFixed(2) : '−∞'}
+                {Number.isFinite(v) ? v.toFixed(PRECISION) : '−∞'}
               </td>
             ))}
           </tr>
@@ -474,7 +475,7 @@ export function AttentionWeightedSumPage() {
       <CorpusMatrix
         data={contributions}
         rowLabels={posLabels.map(
-          (l, j) => `${l} (×${safeWeights[j].toFixed(2)})`
+          (l, j) => `${l} (×${safeWeights[j].toFixed(PRECISION)})`
         )}
         colLabels={dimLabels}
         shade={(v) => shadeDiverging(v, hAbs)}
@@ -509,7 +510,7 @@ export function AttentionWeightedSumPage() {
             nonzero
               .map(
                 (x) =>
-                  `j=${x.j} ("${x.tok}")×${x.w.toFixed(2)}`
+                  `j=${x.j} ("${x.tok}")×${x.w.toFixed(PRECISION)}`
               )
               .join(', ')
           )}
@@ -517,7 +518,7 @@ export function AttentionWeightedSumPage() {
         </li>
         <li>
           <strong>When weights sum to 1</strong> (Σ a_j ={' '}
-          {sumW.toFixed(2)}), the result is a <em>convex combination</em> —
+          {sumW.toFixed(PRECISION)}), the result is a <em>convex combination</em> —
           a point inside the polytope spanned by the contributing{' '}
           <code>h<sub>j</sub></code>'s. No single token's "meaning" is added
           or invented; <code>h'<sub>t</sub></code> is a literal blend of the

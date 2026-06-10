@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { PRECISION } from '../consts';
 import { useEffect, useRef } from 'react';
 
 import type { Matrix } from '../types';
@@ -69,7 +70,7 @@ export function MatrixGrid({ data, highlightRow, cellSize = 32 }: Props) {
       .attr('text-anchor', 'middle')
       .attr('font-size', 10)
       .attr('fill', viz.matrixText)
-      .text((d) => Number(d).toFixed(2));
+      .text((d) => Number(d).toFixed(PRECISION));
   }, [data, highlightRow, cellSize]);
 
   return <svg ref={ref} />;

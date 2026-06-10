@@ -1,4 +1,5 @@
 import { color, font, space } from '../theme';
+import { PRECISION } from '../consts';
 import type { Flash } from '../bigramTrainer';
 import { FormulaDisplay } from './FormulaDisplay';
 import { Panel } from './Panel';
@@ -69,18 +70,18 @@ export function WeightUpdate({ vocab, lr, flash, W, prevGrad, dimmed }: WeightUp
                         {vocab[i]}
                       </th>
                       <td style={{ ...cell, color: color.text.secondary }}>
-                        {old.toFixed(2)}
+                        {old.toFixed(PRECISION)}
                       </td>
                       <td style={{ ...cell, color: grad < 0 ? color.error.fg : color.text.secondary }}>
                         {grad >= 0 ? '+' : ''}
-                        {grad.toFixed(2)}
+                        {grad.toFixed(PRECISION)}
                       </td>
                       <td style={{ ...cell, color: delta >= 0 ? color.positive : color.error.fg }}>
                         {delta >= 0 ? '+' : ''}
-                        {delta.toFixed(2)}
+                        {delta.toFixed(PRECISION)}
                       </td>
                       <td style={{ ...cell, color: color.text.emphasis }}>
-                        {next.toFixed(2)}
+                        {next.toFixed(PRECISION)}
                       </td>
                     </tr>
                   );

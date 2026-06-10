@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { PRECISION } from '../consts';
 
 import { color, font } from '../theme';
 import { Panel } from './Panel';
@@ -20,6 +21,8 @@ interface HeatmapProps {
   live?: boolean;
   // Override the step shown in the live badge (e.g. a previous-step card).
   badgeStep?: number;
+  // Draw a bottom border under this row (e.g. the row feeding another card).
+  borderRow?: number;
 }
 
 const dimRow = { opacity: 0.4, filter: 'grayscale(1)' };
@@ -30,11 +33,12 @@ export function Heatmap({
   matrix,
   vocab,
   cellBackground,
-  formatValue = (v) => v.toFixed(2),
+  formatValue = (v) => v.toFixed(PRECISION),
   dimmed = false,
   trainedRows,
   live = false,
   badgeStep,
+  borderRow,
 }: HeatmapProps) {
   return (
     <Panel title={heading} dimmed={dimmed} live={live} badgeStep={badgeStep}>
@@ -67,7 +71,10 @@ export function Heatmap({
           </tr>
         </thead>
         <tbody>
-          {matrix.map((row, i) => (
+          {matrix.map((row, i) => {
+            const underline =
+              i === borderRow ? `2px solid ${color.emphasis}` : undefined;
+            return (
             <tr key={vocab[i]} style={trainedRows && !trainedRows.has(i) ? dimRow : undefined}>
               <th
                 style={{
@@ -85,13 +92,15 @@ export function Heatmap({
                     padding: '0.25rem 0.5rem',
                     textAlign: 'right',
                     background: cellBackground(v, i, j),
+                    borderBottom: underline,
                   }}
                 >
                   {formatValue(v)}
                 </td>
               ))}
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </Panel>

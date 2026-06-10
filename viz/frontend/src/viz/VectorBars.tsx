@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { PRECISION } from '../consts';
 import { useEffect, useRef } from 'react';
 
 import type { Vector } from '../types';
@@ -53,7 +54,7 @@ export function VectorBars({ data, width = 320, height = 120 }: Props) {
       .attr('y', (v) => (v >= 0 ? y(v) - 2 : y(v) + 12))
       .attr('text-anchor', 'middle')
       .attr('font-size', 10)
-      .text((v) => v.toFixed(2));
+      .text((v) => v.toFixed(PRECISION));
   }, [data, width, height]);
 
   return <svg ref={ref} />;

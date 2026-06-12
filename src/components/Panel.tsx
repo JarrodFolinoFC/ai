@@ -43,7 +43,7 @@ export function Panel({ title, dimmed = false, live = false, badgeStep, style, c
     );
 
   return (
-    <Card size="small" title={header} style={{ ...(greyed ? dimStyle : undefined), ...style }}>
+    <Card size="small" title={header} style={{ minWidth: 160, ...(greyed ? dimStyle : undefined), ...style }}>
       {children}
     </Card>
   );

@@ -2,6 +2,7 @@ import { color, font, space } from '../theme';
 import { PRECISION } from '../consts';
 import { FormulaDisplay } from './FormulaDisplay';
 import { Panel } from './Panel';
+import { TokenChip } from './TokenChip';
 
 interface AfterSoftmaxProps {
   vocab: readonly string[];
@@ -32,7 +33,7 @@ export function AfterSoftmax({ vocab, prevToken, target, row, oldProbs }: AfterS
       <div style={{ display: 'flex', flexDirection: 'column', gap: space.sm }}>
         <FormulaDisplay latex={`p_i = \\frac{e^{x_i}}{\\sum_j e^{x_j}}`} />
         <div style={{ color: color.text.secondary, fontSize: font.size.sm }}>
-          row a = <strong>{prevToken}</strong>, target = <strong>{vocab[target]}</strong> —
+          row a = <TokenChip text={prevToken} isPrev />, target = <TokenChip text={vocab[target]} /> —
           recomputed on the updated row
         </div>
         <table
@@ -57,8 +58,8 @@ export function AfterSoftmax({ vocab, prevToken, target, row, oldProbs }: AfterS
               const delta = probs[i] - oldProbs[i];
               return (
                 <tr key={vocab[i]} style={{ fontWeight: isTarget ? 'bold' : 'normal' }}>
-                  <th style={{ ...cell, textAlign: 'left', color: color.highlight }}>
-                    {vocab[i]}
+                  <th style={{ ...cell, textAlign: 'left' }}>
+                    {isTarget ? <TokenChip text={vocab[i]} /> : vocab[i]}
                   </th>
                   <td style={{ ...cell, color: color.text.secondary }}>
                     {x >= 0 ? '+' : ''}

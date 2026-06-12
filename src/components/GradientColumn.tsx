@@ -3,6 +3,7 @@ import { PRECISION } from '../consts';
 import { FormulaDisplay } from './FormulaDisplay';
 import { Panel } from './Panel';
 import { Term } from './Term';
+import { TokenChip } from './TokenChip';
 
 interface GradientColumnProps {
   vocab: readonly string[];
@@ -36,7 +37,7 @@ export function GradientColumn({ vocab, target, prevProbs, prevGrad, dimmed }: G
           explain="The target as a one-hot vector: 1 at the actual next token, 0 everywhere else."
           formula={`y_i = \\begin{cases} 1 & i = \\text{target} \\\\ 0 & \\text{otherwise} \\end{cases}`}
         />{' '}
-        is the truth, one-hot at the target (<strong>{vocab[target]}</strong>).
+        is the truth, one-hot at the target (<TokenChip text={vocab[target]} />).
       </div>
       <div style={{ marginTop: '0.15rem' }}>
         y = [

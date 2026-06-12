@@ -3,6 +3,7 @@ import { PRECISION } from '../consts';
 import type { Flash } from '../bigramTrainer';
 import { FormulaDisplay } from './FormulaDisplay';
 import { Panel } from './Panel';
+import { TokenChip } from './TokenChip';
 
 interface WeightUpdateProps {
   vocab: readonly string[];
@@ -34,10 +35,8 @@ export function WeightUpdate({ vocab, lr, flash, W, prevGrad, dimmed }: WeightUp
         {flash ? (
           <>
             <div style={{ color: color.text.secondary, fontSize: font.size.sm }}>
-              row a ={' '}
-              <strong style={{ color: color.highlight }}>{vocab[flash.row]}</strong>, η ={' '}
-              {lr}, target ={' '}
-              <strong style={{ color: color.text.emphasis }}>{vocab[flash.target]}</strong>
+              row a = <TokenChip text={vocab[flash.row]} isPrev />, η ={' '}
+              {lr}, target = <TokenChip text={vocab[flash.target]} />
             </div>
             <table
               style={{
@@ -66,8 +65,8 @@ export function WeightUpdate({ vocab, lr, flash, W, prevGrad, dimmed }: WeightUp
                       key={vocab[i]}
                       style={{ fontWeight: isTarget ? 'bold' : 'normal' }}
                     >
-                      <th style={{ ...cell, textAlign: 'left', color: color.highlight }}>
-                        {vocab[i]}
+                      <th style={{ ...cell, textAlign: 'left' }}>
+                        {isTarget ? <TokenChip text={vocab[i]} /> : vocab[i]}
                       </th>
                       <td style={{ ...cell, color: color.text.secondary }}>
                         {old.toFixed(PRECISION)}

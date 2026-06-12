@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { PRECISION } from '../consts';
+import { flashStyles, type HeaderHighlight } from '../flashStyles';
 
 import { color, font } from '../theme';
 import { Panel } from './Panel';
@@ -23,6 +24,10 @@ interface HeatmapProps {
   badgeStep?: number;
   // Draw a bottom border under this row (e.g. the row feeding another card).
   borderRow?: number;
+  // Which row (prev=a) and column (target=b) to highlight in the headers. When
+  // set, the trained row header and target column header are highlighted,
+  // matching the flash matrix tables.
+  flash?: HeaderHighlight | null;
 }
 
 const dimRow = { opacity: 0.4, filter: 'grayscale(1)' };
@@ -39,7 +44,9 @@ export function Heatmap({
   live = false,
   badgeStep,
   borderRow,
+  flash,
 }: HeatmapProps) {
+  const { aHead, bHead } = flashStyles(flash ?? null);
   return (
     <Panel title={heading} dimmed={dimmed} live={live} badgeStep={badgeStep}>
       {subHeading !== undefined && (
@@ -56,13 +63,24 @@ export function Heatmap({
       >
         <thead>
           <tr>
-            <th style={{ padding: '0.25rem 0.5rem' }}></th>
-            {vocab.map((w) => (
+            <th
+              style={{
+                padding: '0.25rem 0.5rem',
+                fontSize: '0.75rem',
+                fontStyle: 'italic',
+                color: color.highlight,
+                textAlign: 'right',
+              }}
+            >
+              prev=a ↓
+            </th>
+            {vocab.map((w, j) => (
               <th
                 key={w}
                 style={{
                   padding: '0.25rem 0.5rem',
                   borderBottom: `1px solid ${color.border.strong}`,
+                  ...bHead(j),
                 }}
               >
                 {w}
@@ -81,6 +99,7 @@ export function Heatmap({
                   textAlign: 'right',
                   padding: '0.25rem 0.5rem',
                   borderRight: `1px solid ${color.border.strong}`,
+                  ...aHead(i),
                 }}
               >
                 {vocab[i]}

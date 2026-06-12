@@ -30,6 +30,7 @@ export function PreviousSoftmax({ vocab, W, flash, step, usedRow }: PreviousSoft
       matrix={softmaxPrev}
       vocab={vocab}
       cellBackground={stepColormap(step)}
+      flash={flash}
       live
       badgeStep={Math.max(0, step - 1)}
       borderRow={usedRow}

@@ -1,7 +1,6 @@
 import { Flex } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { BigramTrainer, type Flash } from '../bigramTrainer';
-import { stepColormap } from '../colormaps';
 import { randomMatrix, softmaxRow } from '../funcs';
 import { StepContext } from '../stepContext';
 import { color, space } from '../theme';
@@ -10,11 +9,10 @@ import { DistanceToFinal } from './DistanceToFinal';
 import { FlashMatrixTable } from './FlashMatrixTable';
 import { GapToFinal } from './GapToFinal';
 import { GradientColumn } from './GradientColumn';
-import { Heatmap } from './Heatmap';
 import { OneStepTrainer } from './OneStepTrainer';
 import { PredictionsVsFinal } from './PredictionsVsFinal';
 import { PreviousSoftmax } from './PreviousSoftmax';
-import { PreviousWeights } from './PreviousWeights';
+import { WeightMatrix } from './WeightMatrix';
 import { RecentLoss } from './RecentLoss';
 import { RowConvergenceTable } from './RowConvergenceTable';
 import { RowSoftmax } from './RowSoftmax';
@@ -91,16 +89,22 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
     setFlash(null);
   }
 
+  // The chain-start table is badged one step behind, so it highlights the pair
+  // trained at the *previous* step rather than the current one. Only while a
+  // single step is animated (flash set) and a previous step exists (step ≥ 2).
+  const prevPair = flash && step >= 2 ? pairs[(step - 2) % pairs.length] : null;
+  const prevStepHighlight = prevPair ? { row: prevPair.prev, target: prevPair.target } : null;
+
   return (
     <StepContext.Provider value={step}>
     <Flex wrap align="stretch" gap={space.lg}>
       <TokenIdMap vocab={vocab} />
+      <WeightMatrix variant="previous" vocab={vocab} W={W} flash={flash} step={step} highlightFlash={prevStepHighlight} usedRow={currentPair.prev} />
+      <PreviousSoftmax vocab={vocab} W={W} flash={flash} step={step} usedRow={currentPair.prev} />
       <TrainingCorpus corpus={corpus}
                       pairIdx={flash ? flash.pairIdx : null}
                       pairsLength={pairs.length} currentPair={currentPair} vocab={vocab} started={step !== 0}
       />
-      <PreviousWeights vocab={vocab} W={W} flash={flash} step={step} usedRow={currentPair.prev} />
-      <PreviousSoftmax vocab={vocab} W={W} flash={flash} step={step} usedRow={currentPair.prev} />
       <RowSoftmax vocab={vocab} currentPair={currentPair} logits={prevLogits} exps={prevExps} expSum={prevExpSum} probs={prevProbs} />
         <AfterSoftmax
           vocab={vocab} prevToken={vocab[currentPair.prev]} target={currentPair.target}
@@ -121,10 +125,10 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
       <FlashMatrixTable heading="W (raw logits)" matrix={W} prevTransform={(row) => row} vocab={vocab} trainedRows={trainedRows} flash={flash} live />
 
       <RowConvergenceTable errorMatrix={errorMatrix} empirical={empirical} rowErrors={rowErrors} totalError={totalError} vocab={vocab} trainedRows={trainedRows} flash={flash} />
-      <GapToFinal W={W} wFinal={wFinal} vocab={vocab} />
+      <GapToFinal W={W} wFinal={wFinal} vocab={vocab} flash={flash} />
       <DistanceToFinal W={W} wFinal={wFinal} wInitial={wInitial} />
-      <PredictionsVsFinal softmaxW={softmaxW} softmaxWFinal={softmaxWFinal} vocab={vocab} />
-      <Heatmap heading="W (trained — used at inference)" matrix={W} vocab={vocab} cellBackground={stepColormap(step, W)} trainedRows={trainedRows} live />
+      <PredictionsVsFinal softmaxW={softmaxW} softmaxWFinal={softmaxWFinal} vocab={vocab} flash={flash} />
+      <WeightMatrix variant="current" vocab={vocab} W={W} flash={flash} step={step} trainedRows={trainedRows} />
     </Flex>
     {/* Controls float in the bottom-right corner so they stay reachable while scrolling. */}
     <div

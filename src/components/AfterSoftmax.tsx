@@ -32,10 +32,6 @@ export function AfterSoftmax({ vocab, prevToken, target, row, oldProbs }: AfterS
     <Panel title="Softmax (per row) — after update" live>
       <div style={{ display: 'flex', flexDirection: 'column', gap: space.sm }}>
         <FormulaDisplay latex={`p_i = \\frac{e^{x_i}}{\\sum_j e^{x_j}}`} />
-        <div style={{ color: color.text.secondary, fontSize: font.size.sm }}>
-          row a = <TokenChip text={prevToken} isPrev />, target = <TokenChip text={vocab[target]} /> —
-          recomputed on the updated row
-        </div>
         <table
           style={{
             borderCollapse: 'collapse',

@@ -1,4 +1,5 @@
 import { Flex } from 'antd';
+import { useEffect, useRef } from 'react';
 
 import { color, space, font } from '../theme';
 import { Panel } from './Panel';
@@ -33,6 +34,24 @@ export function OneStepTrainer({
   onStep,
   onReset,
 }: OneStepTrainerProps) {
+  // Press "n" to advance one step. A ref keeps the listener pointed at the
+  // latest onStep without re-subscribing on every render.
+  const onStepRef = useRef(onStep);
+  onStepRef.current = onStep;
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'n' && e.key !== 'N') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // Don't hijack the key while typing in the seed/lr inputs.
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      e.preventDefault();
+      onStepRef.current(1);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   return (
     <Panel title="One-step trainer">
       <Flex vertical gap={space.sm}>
@@ -68,8 +87,8 @@ export function OneStepTrainer({
           </label>
         </Flex>
         <Flex gap={space.sm} wrap align="center">
-          <button type="button" onClick={() => onStep(1)}>
-            step +1
+          <button type="button" onClick={() => onStep(1)} title="press n">
+            step +1 (n)
           </button>
           <button type="button" onClick={() => onStep(10)}>
             step +10

@@ -12,7 +12,6 @@ function readNavCookie(): boolean {
 }
 
 function writeNavCookie(open: boolean) {
-  // 1-year cookie, root path, lax SameSite (no cross-site need)
   const maxAge = 60 * 60 * 24 * 365;
   document.cookie = `${NAV_COOKIE}=${open ? '1' : '0'}; max-age=${maxAge}; path=/; SameSite=Lax`;
 }
@@ -21,22 +20,19 @@ import { Stage1FlowPage } from './pages/Stage1FlowPage';
 
 interface NavGroup {
   heading: string;
-  // Collapsible groups render as an expand/collapse submenu; the rest render as
-  // static section headings.
   collapsible?: boolean;
   items: { path: string; label: string }[];
 }
 
 const NAV: NavGroup[] = [
   {
-    heading: 'Stage 1',
+    heading: 'Bigram',
     items: [
-      { path: '/stage1-flow', label: 'Bigram' },
+      { path: '/bigram/training', label: 'Training' },
     ],
   }
 ];
 
-// The collapsible group (if any) that contains a given route.
 function groupForPath(path: string): string | undefined {
   return NAV.find((g) => g.collapsible && g.items.some((i) => i.path === path))
     ?.heading;
@@ -50,8 +46,6 @@ export default function App() {
     writeNavCookie(navOpen);
   }, [navOpen]);
 
-  // Keep the collapsible group open whenever the active route lives inside it
-  // (e.g. landing on /softmax directly), while still letting the user toggle it.
   const [openKeys, setOpenKeys] = useState<string[]>(() => {
     const g = groupForPath(location.pathname);
     return g ? [g] : [];
@@ -98,7 +92,7 @@ export default function App() {
       </Layout.Sider>
       <Layout.Content style={{ padding: space.lg }}>
         <Routes>
-          <Route path="/stage1-flow" element={<Stage1FlowPage />} />
+          <Route path="/bigram/training" element={<Stage1FlowPage />} />
         </Routes>
       </Layout.Content>
     </Layout>

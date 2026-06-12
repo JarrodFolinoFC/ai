@@ -15,6 +15,8 @@ interface PanelProps {
   // Override the step shown in the live badge (e.g. a previous-step card). The
   // grey-until-trained logic still uses the real current step.
   badgeStep?: number;
+  // Extra styles merged onto the Card (e.g. width: 'fit-content' to shrink-wrap).
+  style?: CSSProperties;
   children: ReactNode;
 }
 
@@ -22,7 +24,7 @@ const dimStyle: CSSProperties = { opacity: 0.4, filter: 'grayscale(1)' };
 
 // Standard titled container for the visualization panels — a compact antd Card
 // so every panel shares the same header, border, radius, and padding.
-export function Panel({ title, dimmed = false, live = false, badgeStep, children }: PanelProps) {
+export function Panel({ title, dimmed = false, live = false, badgeStep, style, children }: PanelProps) {
   const step = useStep();
   // The step this card represents (badgeStep for cards showing another step,
   // e.g. the previous-step card). Live cards stay greyed out while the step
@@ -41,7 +43,7 @@ export function Panel({ title, dimmed = false, live = false, badgeStep, children
     );
 
   return (
-    <Card size="small" title={header} style={greyed ? dimStyle : undefined}>
+    <Card size="small" title={header} style={{ ...(greyed ? dimStyle : undefined), ...style }}>
       {children}
     </Card>
   );

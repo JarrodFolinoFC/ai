@@ -1,29 +1,9 @@
 version: "0.5"
 
 processes:
-  llm2-viz-backend:
-    command: ../.venv/bin/uvicorn app:app --reload --port 8000
-    working_dir: ./viz/backend
-    environment:
-      - "PYTHONPATH="
-    availability:
-      restart: on_failure
-      backoff_seconds: 2
-    readiness_probe:
-      http_get:
-        host: 127.0.0.1
-        port: 8000
-        path: /api/health
-      initial_delay_seconds: 1
-      period_seconds: 2
-      failure_threshold: 10
-
-  llm2-viz-frontend:
+  viz-frontend:
     command: npm run dev -- --port 5173 --strictPort
-    working_dir: ./viz/frontend
-    depends_on:
-      llm2-viz-backend:
-        condition: process_healthy
+    working_dir: .
     availability:
       restart: on_failure
       backoff_seconds: 2

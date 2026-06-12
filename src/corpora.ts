@@ -2,7 +2,7 @@
 // All pages draw from this single canonical corpus so the demos stay consistent.
 
 export const CORPUS_25 =
-  'the cat on the sofa the dog in the hat the cat in the hat the dog on the sofa the cat on the sofa';
+  'the cat on the sofa. the dog in the hat. the cat in the hat. the dog on the sofa. the cat on the sofa';
 
 export const CORPUS_50 =
   'the cat on the sofa the dog in the hat the cat in the hat the dog on the sofa ' +

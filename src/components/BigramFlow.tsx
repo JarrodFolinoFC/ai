@@ -21,6 +21,7 @@ import { RowSoftmax } from './RowSoftmax';
 import { TrainingCorpus } from './TrainingCorpus';
 import { WeightUpdate } from './WeightUpdate';
 import { WeightUpdateCode } from './WeightUpdateCode';
+import { TokenIdMap } from './TokenIdMap';
 
 interface BigramFlowProps {
   vocab: readonly string[];
@@ -100,6 +101,8 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
     <Flex wrap align="stretch" gap={space.lg}>
       {/* ── INPUT ── */}
       {/* The corpus, tokenized into (prev → target) pairs. */}
+      <TokenIdMap vocab={vocab} />
+
       <TrainingCorpus corpus={corpus}
                       pairIdx={flash ? flash.pairIdx : null}
                       pairsLength={pairs.length} currentPair={currentPair} vocab={vocab} started={step !== 0}

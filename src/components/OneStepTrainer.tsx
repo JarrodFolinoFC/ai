@@ -10,19 +10,13 @@ interface OneStepTrainerProps {
   onSeedChange: (seed: number) => void;
   lr: number;
   onLrChange: (lr: number) => void;
-  // Number of training pairs in one epoch.
   pairsLength: number;
-  // Total pairs processed so far.
   step: number;
-  // Cross-entropy loss of the current worked example.
   currentLoss: number;
-  // Advance training by n pairs.
   onStep: (n: number) => void;
   onReset: () => void;
 }
 
-// Controls for the single-step bigram trainer: seed/lr inputs, step buttons,
-// a status readout, and an epoch progress bar.
 export function OneStepTrainer({
   seed,
   onSeedChange,
@@ -30,19 +24,15 @@ export function OneStepTrainer({
   onLrChange,
   pairsLength,
   step,
-  currentLoss,
   onStep,
   onReset,
 }: OneStepTrainerProps) {
-  // Press "n" to advance one step. A ref keeps the listener pointed at the
-  // latest onStep without re-subscribing on every render.
   const onStepRef = useRef(onStep);
   onStepRef.current = onStep;
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'n' && e.key !== 'N') return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      // Don't hijack the key while typing in the seed/lr inputs.
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
       e.preventDefault();
@@ -112,12 +102,6 @@ export function OneStepTrainer({
             formula="\text{epoch} = \left\lfloor \frac{\text{step}}{N_{\text{pairs}}} \right\rfloor"
           />
           ={Math.floor(step / pairsLength)} &nbsp;
-          <Term
-            label="loss"
-            explain="Cross-entropy loss of the current worked example: how surprised the model is by the correct next token. Lower is better; it falls as training improves the predictions."
-            formula="\mathcal{L} = -\log p_\theta(\text{target} \mid \text{context})"
-          />
-          ={currentLoss.toFixed(3)}
         </span>
         <div style={{ maxWidth: font.prose }}>
         <div

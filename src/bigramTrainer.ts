@@ -6,8 +6,6 @@ export interface TrainingPair {
   target: number;
 }
 
-// Snapshot of the most recently trained row, used to animate the before/after
-// of a single step. null when not applicable (multi-step or not started).
 export interface Flash {
   row: number;
   target: number;
@@ -15,17 +13,12 @@ export interface Flash {
   prevRow: number[];
 }
 
-// The next values for every piece of training state, ready to be destructured
-// straight into the React setters.
 export interface StepResult {
   W: Matrix;
   step: number;
-  lossHistory: number[];
   flash: Flash | null;
 }
 
-// All values derived from the current state for the current render. Pure
-// functions of (W, pairs, step, flash); destructured straight into the view.
 export interface DerivedState {
   pairIdx: number;
   currentPair: TrainingPair;
@@ -42,14 +35,12 @@ export interface DerivedState {
   prevGrad: number[];
 }
 
-// Static properties of the corpus, independent of the live weights.
 export interface CorpusStats {
   counts: Matrix;
   pairs: TrainingPair[];
   empirical: Matrix;
 }
 
-// The fully-trained reference model and the precomputed values its heatmaps need.
 export interface Reference {
   wFinal: Matrix;
   softmaxWFinal: Matrix;
@@ -123,14 +114,12 @@ export class BigramTrainer {
   }
 
   // Run `n` SGD steps from the current position and return the next state.
-  doStep(n: number, lr: number, lossHistory: number[]): StepResult {
+  doStep(n: number, lr: number): StepResult {
     const next = this.W.map((r) => r.slice());
-    const newLosses: number[] = [];
     for (let k = 0; k < n; k++) {
       const pair = this.pairs[(this.step + k) % this.pairs.length];
       const row = next[pair.prev];
       const probs = softmaxRow(row);
-      newLosses.push(-Math.log(Math.max(probs[pair.target], 1e-12)));
       const grad = probs.map((p, i) => (i === pair.target ? p - 1 : p));
       next[pair.prev] = row.map((v, i) => v - lr * grad[i]);
     }
@@ -138,7 +127,6 @@ export class BigramTrainer {
     return {
       W: next,
       step: this.step + n,
-      lossHistory: [...lossHistory, ...newLosses].slice(-MAX_LOSS_HISTORY),
       flash: n === 1 ? this.flashFor(this.step) : null,
     };
   }

@@ -1,25 +1,18 @@
 import { Flex } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { BigramTrainer, type Flash } from '../bigramTrainer';
-import { randomMatrix, softmaxRow } from '../funcs';
+import { randomMatrix } from '../funcs';
 import { StepContext } from '../stepContext';
 import { color, space } from '../theme';
-import { AfterSoftmax } from './AfterSoftmax';
 import { CrossEntropyLoss } from './CrossEntropyLoss';
-import { DistanceToFinal } from './DistanceToFinal';
 import { FlashMatrixTable } from './FlashMatrixTable';
-import { GapToFinal } from './GapToFinal';
 import { GradientColumn } from './GradientColumn';
 import { OneStepTrainer } from './OneStepTrainer';
-import { PredictionsVsFinal } from './PredictionsVsFinal';
 import { PreviousSoftmax } from './PreviousSoftmax';
 import { WeightMatrix } from './WeightMatrix';
-import { RecentLoss } from './RecentLoss';
-import { RowConvergenceTable } from './RowConvergenceTable';
 import { RowSoftmax } from './RowSoftmax';
 import { TrainingCorpus } from './TrainingCorpus';
 import { WeightUpdate } from './WeightUpdate';
-import { WeightUpdateCode } from './WeightUpdateCode';
 import { TokenIdMap } from './TokenIdMap';
 
 interface BigramFlowProps {
@@ -35,36 +28,19 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
   const [lossHistory, setLossHistory] = useState<number[]>([]);
   const [flash, setFlash] = useState<Flash | null>(null);
 
-  const { pairs, empirical } = useMemo(
+  const { pairs } = useMemo(
     () => BigramTrainer.corpusStats(corpus, vocab),
     [corpus, vocab]
   );
   const trainer = useMemo(() => new BigramTrainer(W, pairs, step), [W, pairs, step]);
-  const { wFinal, softmaxWFinal } = useMemo(
-    () => BigramTrainer.trainReference(seed, vocab, pairs),
-    [seed, vocab, pairs]
-  );
-  // The seeded initial weights — the 0%-converged baseline for distance-to-final.
-  const wInitial = useMemo(
-    () => randomMatrix(seed, vocab.length, vocab.length, 1),
-    [seed, vocab]
-  );
-  const { softmaxW, errorMatrix, rowErrors, totalError } = useMemo(
-    () => trainer.analysis(empirical),
-    [trainer, empirical]
-  );
-
   const {
-    currentPair, trainedRows, currentProbs, currentLoss,
+    currentPair, trainedRows, currentLoss,
     prevLogits, prevExps, prevExpSum, prevProbs, prevGrad,
   } = useMemo(
     () => trainer.derive(flash),
     [trainer, flash]
   );
 
-  // Show the most recently recorded training loss so the readout matches the
-  // "Recent mean loss" history (both are training-curve values). Before any
-  // step has run, fall back to the loss of the initial pair against initial W.
   const displayLoss =
     lossHistory.length > 0 ? lossHistory[lossHistory.length - 1] : currentLoss;
 
@@ -75,11 +51,10 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
   }, [seed, corpus, vocab]);
 
   function doStep(n = 1) {
-    const { W: nextW, step: nextStep, lossHistory: nextLossHistory, flash: nextFlash } =
-      trainer.doStep(n, lr, lossHistory);
+    const { W: nextW, step: nextStep, flash: nextFlash } =
+      trainer.doStep(n, lr);
     setW(nextW);
     setStep(nextStep);
-    setLossHistory(nextLossHistory);
     setFlash(nextFlash);
   }
 
@@ -90,13 +65,10 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
     setFlash(null);
   }
 
-  // Reconstruct W before this step's update by reverting the trained row.
   const prevW = flash
     ? W.map((row, i) => (i === flash.row ? flash.prevRow : row))
     : W;
 
-  // The chain-start table highlights the pair trained at the previous step.
-  // Only while a single step is animated (flash set) and step ≥ 2.
   const prevPair = flash && step >= 2 ? pairs[(step - 2) % pairs.length] : null;
   const prevStepHighlight = prevPair ? { row: prevPair.prev, target: prevPair.target } : null;
 
@@ -117,7 +89,7 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
                           pairsLength={pairs.length} currentPair={currentPair} vocab={vocab} started={step !== 0}
         />
       </Flex>
-      <Flex  gap={space.lg} align="stretch">
+      <Flex gap={space.lg} align="stretch">
         <RowSoftmax vocab={vocab} currentPair={currentPair} logits={prevLogits} exps={prevExps} expSum={prevExpSum} probs={prevProbs} />
         <CrossEntropyLoss vocab={vocab} probs={prevProbs} target={currentPair.target} dimmed={step === 0} />
         <GradientColumn vocab={vocab} target={currentPair.target} prevProbs={prevProbs} prevGrad={prevGrad} dimmed={step === 0} />

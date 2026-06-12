@@ -1,8 +1,5 @@
 import { color } from '../theme';
 
-// Token chip styled like the highlighted tokens in TrainingCorpus: the prev
-// ("a"/input) token gets the highlight background, the target ("b"/next) token
-// gets the info background, both with bold emphasis text.
 export function TokenChip({ text, isPrev = false }: { text: string; isPrev?: boolean }) {
   return (
     <span

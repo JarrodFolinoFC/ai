@@ -1,43 +1,27 @@
-import { CORPUS_OPTIONS, type CorpusKey } from '../corpora';
-import { color, space, font } from '../theme';
+import { CORPUS_OPTIONS  } from '../corpora';
+import { space } from '../theme';
 
 interface Props {
-  corpusKey: CorpusKey;
-  onChange: (key: CorpusKey) => void;
-  // Optional caption after the size options, e.g. "(changing this resets training)".
-  note?: string;
-  // Radio-group name; override when more than one corpus selector exists per page.
-  name?: string;
+  onChange: (key: number) => void;
 }
 
-// Corpus-size selector (driven by CORPUS_OPTIONS). Pages own the selected key so
-// they can derive the corpus string and pass it into TrainingCorpus / their logic.
 export function TrainingCorpusOptions({
-  corpusKey,
-  onChange,
-  note,
-  name = 'corpus-size',
+  onChange
 }: Props) {
   return (
     <div style={{ margin: `${space.sm} 0` }}>
-      <span style={{ marginRight: space.sm }}>size:</span>
-      {(Object.keys(CORPUS_OPTIONS) as CorpusKey[]).map((k) => (
-        <label key={k} style={{ marginRight: space.md }}>
+      <span style={{ marginRight: space.sm }}>Corpus size:</span>
+      {CORPUS_OPTIONS.map((c, i) => (
+        <label key={c.length} style={{ marginRight: space.md }}>
           <input
             type="radio"
-            name={name}
-            value={k}
-            checked={corpusKey === k}
-            onChange={() => onChange(k)}
+            name={'corpus-size'}
+            value={i}
+            onChange={() => onChange(i)}
           />
-          &nbsp;{k}
+          &nbsp;{c.trim().split(/\s+/).length}
         </label>
       ))}
-      {note && (
-        <span style={{ color: color.text.secondary, fontSize: font.size.sm }}>
-          {note}
-        </span>
-      )}
     </div>
   );
 }

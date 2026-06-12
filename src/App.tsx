@@ -1,6 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Layout, Menu } from 'antd';
+import { Component, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { Layout, Menu, Alert } from 'antd';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    const { error } = this.state;
+    if (error) return <Alert type="error" message={(error as Error).message} description={<pre style={{ whiteSpace: 'pre-wrap' }}>{(error as Error).stack}</pre>} />;
+    return this.props.children;
+  }
+}
 
 import { color, space, font } from './theme';
 
@@ -28,7 +39,7 @@ const NAV: NavGroup[] = [
   {
     heading: 'Bigram',
     items: [
-      { path: '/bigram/training', label: 'Training' },
+      { path: '/bigram/training', label: 'Training (64 params)' },
     ],
   }
 ];
@@ -91,9 +102,11 @@ export default function App() {
         />
       </Layout.Sider>
       <Layout.Content style={{ padding: space.lg }}>
-        <Routes>
-          <Route path="/bigram/training" element={<Stage1FlowPage />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/bigram/training" element={<Stage1FlowPage />} />
+          </Routes>
+        </ErrorBoundary>
       </Layout.Content>
     </Layout>
   );

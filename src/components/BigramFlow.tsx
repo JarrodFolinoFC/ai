@@ -1,7 +1,7 @@
 import { Flex } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { BigramTrainer, type Flash } from '../bigramTrainer';
-import { divergingColormap } from '../colormaps';
+import { stepColormap } from '../colormaps';
 import { randomMatrix, softmaxRow } from '../funcs';
 import { StepContext } from '../stepContext';
 import { color, space } from '../theme';
@@ -44,11 +44,6 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
   const { wFinal, softmaxWFinal } = useMemo(
     () => BigramTrainer.trainReference(seed, vocab, pairs),
     [seed, vocab, pairs]
-  );
-  // Colour scale for the live trained weights shown by the inference card.
-  const wMaxAbs = useMemo(
-    () => Math.max(1e-6, ...W.flat().map((v) => Math.abs(v))),
-    [W]
   );
   // The seeded initial weights — the 0%-converged baseline for distance-to-final.
   const wInitial = useMemo(
@@ -99,47 +94,22 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
   return (
     <StepContext.Provider value={step}>
     <Flex wrap align="stretch" gap={space.lg}>
-      {/* ── INPUT ── */}
-      {/* The corpus, tokenized into (prev → target) pairs. */}
       <TokenIdMap vocab={vocab} />
-
       <TrainingCorpus corpus={corpus}
                       pairIdx={flash ? flash.pairIdx : null}
                       pairsLength={pairs.length} currentPair={currentPair} vocab={vocab} started={step !== 0}
       />
-      {/* Static corpus statistics (currently disabled). */}
-      {/* <Heatmap heading="Bigram counts (rows = prev, cols = next)" matrix={counts} vocab={vocab} formatValue={(c) => c} */}
-      {/*     cellBackground={(c, i, j) => */}
-      {/*       vocab[i] === 'cat' && vocab[j] === 'on' */}
-      {/*         ? color.highlightBg */}
-      {/*         : c === 0 */}
-      {/*           ? color.bg.surface */}
-      {/*           : 'transparent'} */}
-      {/*   /> */}
-      {/* <Heatmap heading="Empirical (target)" subHeading={<FormulaDisplay inline latex={`p_i = \\frac{\\text{count}_i}{\\sum \\text{count}}`} />} matrix={empirical} vocab={vocab} cellBackground={probCellBg} /> */}
-      {/* <Heatmap heading="Softmax" subHeading={<FormulaDisplay inline latex={`p_i = \\frac{e^{x_i}}{\\sum e^{x}}`} />} matrix={counts.map(softmaxRow)} vocab={vocab} cellBackground={probCellBg} /> */}
-
       <PreviousWeights vocab={vocab} W={W} flash={flash} step={step} usedRow={currentPair.prev} />
       <PreviousSoftmax vocab={vocab} W={W} flash={flash} step={step} usedRow={currentPair.prev} />
       <RowSoftmax vocab={vocab} currentPair={currentPair} logits={prevLogits} exps={prevExps} expSum={prevExpSum} probs={prevProbs} />
-      {/* <ForwardPassSection */}
-      {/*   vocab={vocab} targetIdx={currentPair.target} prevToken={vocab[currentPair.prev]} */}
-      {/*   before={{ logits: prevLogits, exps: prevExps, expSum: prevExpSum, probs: prevProbs }} */}
-      {/*   current={{ logits: currentLogits, exps: currentExps, expSum: currentExpSum, probs: currentProbs }} */}
-      {/* /> */}
-      {/* Chain 3. The full prediction matrix, before vs after this step's update. */}
         <AfterSoftmax
           vocab={vocab} prevToken={vocab[currentPair.prev]} target={currentPair.target}
           row={W[currentPair.prev]} oldProbs={prevProbs}
         />
       <FlashMatrixTable heading="softmax(W) per row (after update)" matrix={softmaxW} prevTransform={softmaxRow} vocab={vocab} trainedRows={trainedRows} flash={flash} live />
-      {/* Chain 4. The loss from the prediction vs the target, averaged over recent steps. */}
       <RecentLoss lossHistory={lossHistory} />
-      {/* Chain 5. Backward pass: the gradient p − y that drives the weight update. */}
       <GradientColumn vocab={vocab} target={currentPair.target} prevProbs={prevProbs} prevGrad={prevGrad} dimmed={step === 0} />
-      {/* Chain 6. The SGD update applied to the prev row: Wₐ ← Wₐ − η(p − y). */}
       <WeightUpdate vocab={vocab} lr={lr} flash={flash} W={W} prevGrad={prevGrad} dimmed={step === 0} />
-      {/* Chain 6b. The same update as runnable JavaScript, expandable to a full-screen runner. */}
       <WeightUpdateCode
         vocab={vocab} lr={lr}
         rowLabel={vocab[flash ? flash.row : currentPair.prev]}
@@ -148,27 +118,13 @@ export function BigramFlow({ vocab, corpus }: BigramFlowProps) {
         target={flash ? flash.target : currentPair.target}
         started={step !== 0}
       />
-      {/* Chain 6c. Post-update forward pass: softmax of the updated row, with Δp = new − old. */}
-      {/* Chain 7. The resulting weights after this step: W (raw logits) — becomes next step's chain start. */}
       <FlashMatrixTable heading="W (raw logits)" matrix={W} prevTransform={(row) => row} vocab={vocab} trainedRows={trainedRows} flash={flash} live />
 
-      {/* ── EVALUATION / REFERENCE ── */}
-      {/* How close the current predictions are to the empirical target. */}
       <RowConvergenceTable errorMatrix={errorMatrix} empirical={empirical} rowErrors={rowErrors} totalError={totalError} vocab={vocab} trainedRows={trainedRows} flash={flash} />
-      {/* <Heatmap */}
-      {/*     heading="softmax(W_final) per row" */}
-      {/*     matrix={softmaxWFinal} */}
-      {/*     vocab={vocab} */}
-      {/*     cellBackground={sequentialColormap([34, 197, 94])} */}
-      {/* /> */}
-      {/* Per-step gap each weight still has to close: W_final − W. */}
       <GapToFinal W={W} wFinal={wFinal} vocab={vocab} />
-      {/* Per-step scalar distance to the converged model + % converged. */}
       <DistanceToFinal W={W} wFinal={wFinal} wInitial={wInitial} />
-      {/* Current predictions side-by-side with the converged predictions. */}
       <PredictionsVsFinal softmaxW={softmaxW} softmaxWFinal={softmaxWFinal} vocab={vocab} />
-      {/* The live trained model used at inference; only trained rows are un-greyed. */}
-      <Heatmap heading="W (trained — used at inference)" matrix={W} vocab={vocab} cellBackground={divergingColormap(wMaxAbs)} trainedRows={trainedRows} live />
+      <Heatmap heading="W (trained — used at inference)" matrix={W} vocab={vocab} cellBackground={stepColormap(step, W)} trainedRows={trainedRows} live />
     </Flex>
     {/* Controls float in the bottom-right corner so they stay reachable while scrolling. */}
     <div

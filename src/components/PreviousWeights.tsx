@@ -1,4 +1,4 @@
-import { divergingColormap } from '../colormaps';
+import { stepColormap } from '../colormaps';
 import type { Flash } from '../bigramTrainer';
 import { Heatmap } from './Heatmap';
 
@@ -21,7 +21,6 @@ export function PreviousWeights({ vocab, W, flash, step, usedRow }: PreviousWeig
   const prevW = flash
     ? W.map((rowVals, i) => (i === flash.row ? flash.prevRow : rowVals))
     : W;
-  const maxAbs = Math.max(1e-6, ...prevW.flat().map((v) => Math.abs(v)));
 
   return (
     <Heatmap
@@ -29,7 +28,7 @@ export function PreviousWeights({ vocab, W, flash, step, usedRow }: PreviousWeig
       subHeading={"Each row is a logit"}
       matrix={prevW}
       vocab={vocab}
-      cellBackground={divergingColormap(maxAbs)}
+      cellBackground={stepColormap(step, prevW)}
       live
       badgeStep={Math.max(0, step - 1)}
       borderRow={usedRow !== 0 ? usedRow : null}

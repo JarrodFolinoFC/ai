@@ -1,5 +1,6 @@
-import { divergingColormap } from '../colormaps';
+import { stepColormap } from '../colormaps';
 import { PRECISION } from '../consts';
+import { useStep } from '../stepContext';
 import { Heatmap } from './Heatmap';
 
 interface GapToFinalProps {
@@ -14,14 +15,13 @@ interface GapToFinalProps {
 // shrink toward 0 (faint) as the live model converges on the reference.
 export function GapToFinal({ W, wFinal, vocab }: GapToFinalProps) {
   const gap = wFinal.map((row, i) => row.map((v, j) => v - W[i][j]));
-  const maxAbs = Math.max(1e-6, ...gap.flat().map((v) => Math.abs(v)));
 
   return (
     <Heatmap
       heading="Gap to final (W_final − W)"
       matrix={gap}
       vocab={vocab}
-      cellBackground={divergingColormap(maxAbs)}
+      cellBackground={stepColormap(useStep(), gap)}
       formatValue={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(PRECISION)}`}
       live
     />

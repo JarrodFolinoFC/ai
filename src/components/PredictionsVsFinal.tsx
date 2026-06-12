@@ -1,5 +1,6 @@
-import { probCellBg } from '../colormaps';
+import { stepColormap, type Colormap } from '../colormaps';
 import { PRECISION } from '../consts';
+import { useStep } from '../stepContext';
 import { color, font, space } from '../theme';
 import { Panel } from './Panel';
 
@@ -16,10 +17,12 @@ function ProbTable({
   label,
   matrix,
   vocab,
+  cellBackground,
 }: {
   label: string;
   matrix: number[][];
   vocab: readonly string[];
+  cellBackground: Colormap;
 }) {
   return (
     <div>
@@ -50,7 +53,7 @@ function ProbTable({
                     padding: '0.2rem 0.4rem',
                     textAlign: 'right',
                     color: color.text.secondary,
-                    background: probCellBg(v, i, j),
+                    background: cellBackground(v, i, j),
                   }}
                 >
                   {v.toFixed(PRECISION)}
@@ -67,11 +70,12 @@ function ProbTable({
 // Side-by-side comparison: the current model's predictions next to the
 // converged model's, so you watch softmax(W) morph into softmax(W_final).
 export function PredictionsVsFinal({ softmaxW, softmaxWFinal, vocab }: PredictionsVsFinalProps) {
+  const cellBackground = stepColormap(useStep());
   return (
     <Panel title="Predictions: now vs final" live>
       <div style={{ display: 'flex', gap: space.lg, flexWrap: 'wrap' }}>
-        <ProbTable label="softmax(W) — now" matrix={softmaxW} vocab={vocab} />
-        <ProbTable label="softmax(W_final) — final" matrix={softmaxWFinal} vocab={vocab} />
+        <ProbTable label="softmax(W) — now" matrix={softmaxW} vocab={vocab} cellBackground={cellBackground} />
+        <ProbTable label="softmax(W_final) — final" matrix={softmaxWFinal} vocab={vocab} cellBackground={cellBackground} />
       </div>
     </Panel>
   );

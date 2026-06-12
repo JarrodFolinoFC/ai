@@ -1,4 +1,4 @@
-import { probCellBg } from '../colormaps';
+import { stepColormap } from '../colormaps';
 import { softmaxRow } from '../funcs';
 import type { Flash } from '../bigramTrainer';
 import { Heatmap } from './Heatmap';
@@ -29,7 +29,7 @@ export function PreviousSoftmax({ vocab, W, flash, step, usedRow }: PreviousSoft
       heading={step > 1 ? "softmax(W) per row (before update)" : "softmax (untrained weights)"}
       matrix={softmaxPrev}
       vocab={vocab}
-      cellBackground={probCellBg}
+      cellBackground={stepColormap(step)}
       live
       badgeStep={Math.max(0, step - 1)}
       borderRow={usedRow}
